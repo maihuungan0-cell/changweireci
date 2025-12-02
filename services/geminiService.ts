@@ -1,10 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { AnalysisResult, Platform } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const analyzeTopic = async (topic: string): Promise<{ data: AnalysisResult, sources: { title: string, uri: string }[] }> => {
   try {
+    // Initialize the AI client lazily to avoid top-level 'process is not defined' errors during app startup
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
     const prompt = `
       你是一位精通中国互联网市场的 SEO 与内容营销专家。
       请分析主题："${topic}"。
