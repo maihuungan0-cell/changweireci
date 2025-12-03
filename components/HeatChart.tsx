@@ -64,7 +64,7 @@ const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
   };
 
   return (
-    <div className="w-full h-[550px] bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
+    <div className="w-full h-[500px] bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
       <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider shrink-0">热度排行 Top 10</h3>
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">

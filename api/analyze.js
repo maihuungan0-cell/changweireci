@@ -40,9 +40,10 @@ export default async function handler(req, res) {
           
           你的任务：
           1. 模拟在微信 (WeChat)、百度 (Baidu)、知乎 (Zhihu) 等主流平台上搜索与该主题相关的近期高流量、高热度及长尾关键词。
-          2. 识别具有高搜索意图但竞争相对较小的具体“长尾”关键词。
-          3. 估算“热度分数”（0-100）和趋势（up, down, stable）。
-          4. 生成 5-8 个极具点击欲望的爆款文章标题。
+          2. 请务必生成至少 10 个不同的关键词（keywords 数组长度至少为 10），以便完整展示 Top 10 热度榜单。
+          3. 识别具有高搜索意图但竞争相对较小的具体“长尾”关键词。
+          4. 估算“热度分数”（0-100）和趋势（up, down, stable）。
+          5. 生成 6-10 个极具点击欲望的爆款文章标题。
 
           请严格以 JSON 对象格式返回结果。不要包含 markdown 格式 (如 \`\`\`json )。
           
@@ -118,6 +119,11 @@ export default async function handler(req, res) {
     
     // 检查业务错误
     if (data.Response && data.Response.Error) {
+      if (data.Response.Error.Code === 'FailedOperation.ServiceNotActivated') {
+         return res.status(500).json({ 
+           error: '腾讯云混元大模型服务未开通。请前往控制台开通: https://console.cloud.tencent.com/hunyuan' 
+         });
+      }
       console.error("Tencent API Business Error:", data.Response.Error);
       return res.status(500).json({ error: `腾讯云 API 拒绝: ${data.Response.Error.Message} (${data.Response.Error.Code})` });
     }
