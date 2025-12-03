@@ -43,7 +43,10 @@ function App() {
             </div>
             <span className="text-xl font-bold text-gray-900 tracking-tight">TrendBurst 爆款挖掘机</span>
           </div>
-          <a href="#" className="text-sm text-gray-500 hover:text-gray-900 font-medium">版本定价</a>
+          <div className="flex items-center gap-4">
+             <span className="text-xs font-medium text-gray-400 border border-gray-200 px-2 py-1 rounded bg-gray-50">Powered by 腾讯混元</span>
+             <a href="#" className="text-sm text-gray-500 hover:text-gray-900 font-medium">版本定价</a>
+          </div>
         </div>
       </header>
 
@@ -55,7 +58,7 @@ function App() {
             挖掘全网 <span className="text-brand-600">长尾热词</span> 与爆款标题
           </h1>
           <p className="text-lg text-gray-600 mb-8">
-            一键分析微信、百度、知乎实时搜索趋势，AI 智能生成高曝光长尾词与吸睛标题，助你轻松打造 10W+。
+            基于腾讯混元大模型，深度分析微信、百度、知乎搜索趋势，生成高曝光长尾词与吸睛标题。
           </p>
 
           <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
@@ -78,7 +81,7 @@ function App() {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      分析中...
+                      深度分析中...
                     </>
                   ) : (
                     <>
@@ -109,7 +112,8 @@ function App() {
         {/* Error State */}
         {error && (
           <div className="max-w-3xl mx-auto bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-center mb-10">
-            <p>{error}</p>
+            <p className="font-semibold">分析失败</p>
+            <p className="text-sm mt-1 opacity-90">{error}</p>
           </div>
         )}
 
