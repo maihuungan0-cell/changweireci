@@ -31,28 +31,28 @@ const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
   };
 
   return (
-    <div className="w-full h-[300px] bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">热度排行 Top 10</h3>
+    <div className="w-full h-[500px] bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h3 className="text-sm font-semibold text-gray-700 mb-6 uppercase tracking-wider">热度排行 Top 10</h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
           layout="vertical"
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
           <XAxis type="number" domain={[0, 100]} hide />
           <YAxis 
             type="category" 
             dataKey="keyword" 
-            width={100} 
-            tick={{fontSize: 12, fill: '#64748b'}}
-            tickFormatter={(value) => value.length > 8 ? `${value.substring(0, 8)}...` : value}
+            width={140} 
+            tick={{fontSize: 13, fill: '#64748b'}}
+            tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
           />
           <Tooltip 
             cursor={{fill: '#f8fafc'}}
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />
-          <Bar dataKey="heatScore" radius={[0, 4, 4, 0]} barSize={20}>
+          <Bar dataKey="heatScore" radius={[0, 4, 4, 0]} barSize={24}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={getBarColor(entry.platform)} />
             ))}
