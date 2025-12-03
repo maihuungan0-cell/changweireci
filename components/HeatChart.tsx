@@ -15,6 +15,39 @@ interface HeatChartProps {
   data: KeywordItem[];
 }
 
+// 自定义 Y 轴标签组件，支持自动换行
+const CustomYAxisTick = (props: any) => {
+  const { x, y, payload } = props;
+  const value = payload.value as string;
+  
+  // 换行逻辑：如果超过 6 个字符，截断并分两行显示
+  const maxLength = 6;
+  let lines = [];
+  if (value.length > maxLength) {
+    lines.push(value.substring(0, maxLength));
+    let remaining = value.substring(maxLength);
+    // 如果第二行还是很长，就截断加省略号
+    if (remaining.length > maxLength) {
+        remaining = remaining.substring(0, maxLength - 1) + '...';
+    }
+    lines.push(remaining);
+  } else {
+    lines.push(value);
+  }
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={lines.length > 1 ? -6 : 4} textAnchor="end" fill="#64748b" fontSize={12}>
+        {lines.map((line, index) => (
+          <tspan x={-10} dy={index === 0 ? 0 : 16} key={index}>
+            {line}
+          </tspan>
+        ))}
+      </text>
+    </g>
+  );
+};
+
 const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
   // Sort by heat score descending and take top 10
   const chartData = [...data]
@@ -31,28 +64,28 @@ const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
   };
 
   return (
-    <div className="w-full h-[300px] bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">热度排行 Top 10</h3>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full h-[600px] bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h3 className="text-sm font-semibold text-gray-700 mb-6 uppercase tracking-wider">热度排行 Top 10</h3>
+      <ResponsiveContainer width="100%" height="90%">
         <BarChart
           data={chartData}
           layout="vertical"
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
           <XAxis type="number" domain={[0, 100]} hide />
           <YAxis 
             type="category" 
             dataKey="keyword" 
-            width={100} 
-            tick={{fontSize: 12, fill: '#64748b'}}
-            tickFormatter={(value) => value.length > 8 ? `${value.substring(0, 8)}...` : value}
+            width={130} 
+            tick={<CustomYAxisTick />}
+            interval={0} // 强制显示所有标签，不跳过
           />
           <Tooltip 
             cursor={{fill: '#f8fafc'}}
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />
-          <Bar dataKey="heatScore" radius={[0, 4, 4, 0]} barSize={20}>
+          <Bar dataKey="heatScore" radius={[0, 4, 4, 0]} barSize={24}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={getBarColor(entry.platform)} />
             ))}
