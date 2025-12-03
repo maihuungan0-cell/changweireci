@@ -64,34 +64,36 @@ const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
   };
 
   return (
-    <div className="w-full h-[800px] bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h3 className="text-sm font-semibold text-gray-700 mb-6 uppercase tracking-wider">热度排行 Top 10</h3>
-      <ResponsiveContainer width="100%" height="90%">
-        <BarChart
-          data={chartData}
-          layout="vertical"
-          margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-          <XAxis type="number" domain={[0, 100]} hide />
-          <YAxis 
-            type="category" 
-            dataKey="keyword" 
-            width={130} 
-            tick={<CustomYAxisTick />}
-            interval={0} // 强制显示所有标签，不跳过
-          />
-          <Tooltip 
-            cursor={{fill: '#f8fafc'}}
-            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-          />
-          <Bar dataKey="heatScore" radius={[0, 4, 4, 0]} barSize={24}>
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getBarColor(entry.platform)} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="w-full h-[550px] bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
+      <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider shrink-0">热度排行 Top 10</h3>
+      <div className="flex-1 w-full min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+            <XAxis type="number" domain={[0, 100]} hide />
+            <YAxis 
+              type="category" 
+              dataKey="keyword" 
+              width={130} 
+              tick={<CustomYAxisTick />}
+              interval={0} // 强制显示所有标签，不跳过
+            />
+            <Tooltip 
+              cursor={{fill: '#f8fafc'}}
+              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+            />
+            <Bar dataKey="heatScore" radius={[0, 4, 4, 0]} barSize={20}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getBarColor(entry.platform)} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
