@@ -64,7 +64,7 @@ const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
   };
 
   return (
-    <div className="w-full h-[600px] bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="w-full h-[800px] bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h3 className="text-sm font-semibold text-gray-700 mb-6 uppercase tracking-wider">热度排行 Top 10</h3>
       <ResponsiveContainer width="100%" height="90%">
         <BarChart
