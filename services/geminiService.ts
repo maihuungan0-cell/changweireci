@@ -11,12 +11,21 @@ export const analyzeTopic = async (topic: string): Promise<{ data: AnalysisResul
       body: JSON.stringify({ topic }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `请求失败: ${response.status}`);
+    const contentType = response.headers.get("content-type");
+    
+    // 如果返回的不是 JSON (例如 Vercel 的 500 错误页面通常是 HTML)
+    if (!contentType || !contentType.includes("application/json")) {
+       const textBody = await response.text();
+       console.error("Non-JSON response:", textBody);
+       throw new Error(`服务器连接失败 (${response.status})。可能是环境变量未配置或服务崩溃。`);
     }
 
     const resJson = await response.json();
+
+    if (!response.ok) {
+      throw new Error(resJson.error || `请求失败: ${response.status}`);
+    }
+
     const text = resJson.text || "";
 
     // Parse JSON safely

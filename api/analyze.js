@@ -1,7 +1,6 @@
-const https = require('https');
 const crypto = require('crypto');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -15,15 +14,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: '服务端未配置腾讯云 API 密钥 (TENCENT_SECRET_ID / TENCENT_SECRET_KEY)' });
   }
 
+  // 使用 hunyuan-standard 模型，兼容性更好
+  // 如果需要 Pro 版，请确保账号有权限并将此处改为 "hunyuan-pro"
+  const MODEL_ID = "hunyuan-standard"; 
   const endpoint = "hunyuan.tencentcloudapi.com";
   const service = "hunyuan";
   const region = "ap-guangzhou";
   const action = "ChatCompletions";
   const version = "2023-09-01";
   
-  // 构造请求体
   const payloadObj = {
-    Model: "hunyuan-pro",
+    Model: MODEL_ID,
     Messages: [
       {
         Role: "user",
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
           3. 估算“热度分数”（0-100）和趋势（up, down, stable）。
           4. 生成 5-8 个极具点击欲望的爆款文章标题。
 
-          请严格以 JSON 对象格式返回结果。不要包含 markdown 格式。
+          请严格以 JSON 对象格式返回结果。不要包含 markdown 格式 (如 \`\`\`json )。
           
           JSON 结构要求：
           {
@@ -64,10 +65,8 @@ export default async function handler(req, res) {
   // --- 腾讯云 V3 签名算法 ---
   const date = new Date();
   const timestamp = Math.floor(date.getTime() / 1000);
-  // YYYY-MM-DD
   const dateStr = date.toISOString().split('T')[0];
 
-  // 1. 拼接规范请求串
   const algorithm = "TC3-HMAC-SHA256";
   const httpRequestMethod = "POST";
   const canonicalUri = "/";
@@ -77,63 +76,50 @@ export default async function handler(req, res) {
   const hashedRequestPayload = crypto.createHash('sha256').update(payload).digest('hex');
   const canonicalRequest = httpRequestMethod + "\n" + canonicalUri + "\n" + canonicalQueryString + "\n" + canonicalHeaders + "\n" + signedHeaders + "\n" + hashedRequestPayload;
 
-  // 2. 拼接待签名字符串
   const credentialScope = dateStr + "/" + service + "/" + "tc3_request";
   const hashedCanonicalRequest = crypto.createHash('sha256').update(canonicalRequest).digest('hex');
   const stringToSign = algorithm + "\n" + timestamp + "\n" + credentialScope + "\n" + hashedCanonicalRequest;
 
-  // 3. 计算签名
   const kDate = crypto.createHmac('sha256', "TC3" + SECRET_KEY).update(dateStr).digest();
   const kService = crypto.createHmac('sha256', kDate).update(service).digest();
   const kSigning = crypto.createHmac('sha256', kService).update("tc3_request").digest();
   const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
 
-  // 4. 拼接 Authorization
   const authorization = algorithm + " " + "Credential=" + SECRET_ID + "/" + credentialScope + ", " + "SignedHeaders=" + signedHeaders + ", " + "Signature=" + signature;
 
-  // 发送请求
-  const options = {
-    hostname: endpoint,
-    method: 'POST',
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": authorization,
-      "X-TC-Action": action,
-      "X-TC-Version": version,
-      "X-TC-Timestamp": timestamp.toString(),
-      "X-TC-Region": region,
+  try {
+    // 使用 Node.js 原生 fetch (Node 18+)
+    const response = await fetch(`https://${endpoint}`, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authorization,
+        "X-TC-Action": action,
+        "X-TC-Version": version,
+        "X-TC-Timestamp": timestamp.toString(),
+        "X-TC-Region": region,
+      },
+      body: payload
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Tencent API HTTP Error:", response.status, errorText);
+      return res.status(500).json({ error: `腾讯云接口请求失败: ${response.status}`, details: errorText });
     }
-  };
 
-  return new Promise((resolve, reject) => {
-    const apiReq = https.request(options, (apiRes) => {
-      let data = '';
-      apiRes.on('data', (chunk) => data += chunk);
-      apiRes.on('end', () => {
-        try {
-          const jsonResponse = JSON.parse(data);
-          if (jsonResponse.Response && jsonResponse.Response.Error) {
-             console.error("Tencent API Error:", jsonResponse.Response.Error);
-             return res.status(500).json({ error: `腾讯云 API 错误: ${jsonResponse.Response.Error.Message}` });
-          }
-          
-          // 提取内容
-          const content = jsonResponse.Response?.Choices?.[0]?.Message?.Content || "";
-          res.status(200).json({ text: content });
-          resolve();
-        } catch (e) {
-          res.status(500).json({ error: '无法解析腾讯云响应' });
-          resolve();
-        }
-      });
-    });
+    const data = await response.json();
+    
+    if (data.Response && data.Response.Error) {
+      console.error("Tencent API Error:", data.Response.Error);
+      return res.status(500).json({ error: `腾讯云 API 错误: ${data.Response.Error.Message}` });
+    }
 
-    apiReq.on('error', (e) => {
-      res.status(500).json({ error: e.message });
-      resolve();
-    });
+    const content = data.Response?.Choices?.[0]?.Message?.Content || "";
+    return res.status(200).json({ text: content });
 
-    apiReq.write(payload);
-    apiReq.end();
-  });
-}
+  } catch (error) {
+    console.error("Server Error:", error);
+    return res.status(500).json({ error: `服务端内部错误: ${error.message}` });
+  }
+};
