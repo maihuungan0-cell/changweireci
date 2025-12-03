@@ -1,26 +1,26 @@
-const crypto = require('crypto');
+import crypto from 'node:crypto';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
+  // 仅允许 POST 请求
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { topic } = req.body;
   
-  // 核心修复：同时尝试读取标准名称和 VITE_ 前缀名称
-  // Vercel 只有 VITE_ 前缀的变量会暴露给前端，但 Serverless Function 可以读取所有环境变量
-  // 为了兼容你的配置，这里增加了 || 逻辑
+  // 1. 读取环境变量 (兼容 Vercel 标准命名和 Vite 前缀命名)
   const SECRET_ID = process.env.TENCENT_SECRET_ID || process.env.VITE_TENCENT_SECRET_ID;
   const SECRET_KEY = process.env.TENCENT_SECRET_KEY || process.env.VITE_TENCENT_SECRET_KEY;
 
+  // 2. 检查密钥是否存在
   if (!SECRET_ID || !SECRET_KEY) {
-    console.error("Missing Credentials. Checked TENCENT_SECRET_ID and VITE_TENCENT_SECRET_ID.");
+    console.error("Missing Credentials on Server.");
     return res.status(500).json({ 
-      error: '服务端环境变量未检测到。请检查 Vercel 设置中是否配置了 VITE_TENCENT_SECRET_ID 和 VITE_TENCENT_SECRET_KEY' 
+      error: '服务端环境变量缺失。请在 Vercel Settings 中配置 TENCENT_SECRET_ID 和 TENCENT_SECRET_KEY。' 
     });
   }
 
-  // 使用 hunyuan-standard 模型
+  // 3. 腾讯混元 API 配置
   const MODEL_ID = "hunyuan-standard"; 
   const endpoint = "hunyuan.tencentcloudapi.com";
   const service = "hunyuan";
@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
   const action = "ChatCompletions";
   const version = "2023-09-01";
   
+  // 4. 构建请求体
   const payloadObj = {
     Model: MODEL_ID,
     Messages: [
@@ -67,7 +68,7 @@ module.exports = async (req, res) => {
   };
   const payload = JSON.stringify(payloadObj);
 
-  // --- 腾讯云 V3 签名算法 ---
+  // 5. 腾讯云 V3 签名算法 (使用 node:crypto)
   const date = new Date();
   const timestamp = Math.floor(date.getTime() / 1000);
   const dateStr = date.toISOString().split('T')[0];
@@ -92,6 +93,7 @@ module.exports = async (req, res) => {
 
   const authorization = algorithm + " " + "Credential=" + SECRET_ID + "/" + credentialScope + ", " + "SignedHeaders=" + signedHeaders + ", " + "Signature=" + signature;
 
+  // 6. 发送请求
   try {
     const response = await fetch(`https://${endpoint}`, {
       method: 'POST',
@@ -106,7 +108,6 @@ module.exports = async (req, res) => {
       body: payload
     });
 
-    // 处理 HTTP 错误 (如 4xx, 5xx)
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Tencent API HTTP Error:", response.status, errorText);
@@ -115,17 +116,20 @@ module.exports = async (req, res) => {
 
     const data = await response.json();
     
-    // 处理腾讯云业务逻辑错误
+    // 检查业务错误
     if (data.Response && data.Response.Error) {
       console.error("Tencent API Business Error:", data.Response.Error);
       return res.status(500).json({ error: `腾讯云 API 拒绝: ${data.Response.Error.Message} (${data.Response.Error.Code})` });
     }
 
+    // 提取内容
     const content = data.Response?.Choices?.[0]?.Message?.Content || "";
+    
+    // 返回成功响应
     return res.status(200).json({ text: content });
 
   } catch (error) {
     console.error("Internal Server Function Error:", error);
     return res.status(500).json({ error: `服务端执行错误: ${error.message}` });
   }
-};
+}

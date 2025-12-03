@@ -16,14 +16,16 @@ export const analyzeTopic = async (topic: string): Promise<{ data: AnalysisResul
     // 如果返回的不是 JSON (例如 Vercel 的 500 错误页面通常是 HTML)
     if (!contentType || !contentType.includes("application/json")) {
        const textBody = await response.text();
-       console.error("Non-JSON response:", textBody);
-       throw new Error(`服务器连接失败 (${response.status})。可能是环境变量未配置或服务崩溃。`);
+       console.error("Critical API Error (Non-JSON response):", textBody);
+       // 尝试从 HTML 中提取错误信息（如果有的话），或者直接抛出通用错误
+       throw new Error(`服务器连接失败 (${response.status})。请检查 Vercel 函数日志或环境变量配置。`);
     }
 
     const resJson = await response.json();
 
     if (!response.ok) {
-      throw new Error(resJson.error || `请求失败: ${response.status}`);
+      // 展示后端返回的具体错误信息
+      throw new Error(resJson.error || resJson.details || `请求失败: ${response.status}`);
     }
 
     const text = resJson.text || "";
