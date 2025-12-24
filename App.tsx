@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Sparkles, BarChart3, Flame, RefreshCw, Smartphone, HeartPulse, Briefcase, Gamepad2 } from './components/Icons';
+import { Search, Loader2, Sparkles, BarChart3, Flame, Smartphone, HeartPulse, Briefcase, Gamepad2 } from './components/Icons';
 import { analyzeTopic } from './services/geminiService';
 import { AnalysisResult, RecommendTopic } from './types';
 import ResultCard from './components/ResultCard';
 
-// 扩充至16个针对安卓/应用宝用户画像的高点击推荐数据
+// 16个针对安卓/应用宝用户画像的高点击推荐数据
 const DAILY_RECOMMENDS: RecommendTopic[] = [
   { title: '华为手机清理内存深度技巧', category: '极客', heat: 98, icon: 'Smartphone' },
   { title: '秋季中老年养生禁忌', category: '生活', heat: 95, icon: 'HeartPulse' },
@@ -136,9 +136,6 @@ function App() {
                 今日爆款挖掘建议
                 <span className="ml-3 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">基于应用宝用户画像</span>
               </h2>
-              <button className="text-sm text-brand-600 hover:text-brand-700 flex items-center font-medium px-3 py-1 bg-brand-50 rounded-full transition-colors">
-                <RefreshCw className="w-3 h-3 mr-1.5" /> 换一批
-              </button>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
