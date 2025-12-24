@@ -1,36 +1,46 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Loader2, Sparkles, BarChart3, Flame, Smartphone, HeartPulse, Briefcase, Gamepad2 } from './components/Icons';
-import { analyzeTopic } from './services/geminiService';
+import { analyzeTopic, fetchDailyRecommendations } from './services/geminiService';
 import { AnalysisResult, RecommendTopic } from './types';
 import ResultCard from './components/ResultCard';
 
-// 16个针对安卓/应用宝用户画像的高点击推荐数据
-const DAILY_RECOMMENDS: RecommendTopic[] = [
-  { title: '华为手机清理内存深度技巧', category: '极客', heat: 98, icon: 'Smartphone' },
-  { title: '秋季中老年养生禁忌', category: '生活', heat: 95, icon: 'HeartPulse' },
-  { title: '普通人如何用AI写简历涨薪', category: '效率', heat: 92, icon: 'Briefcase' },
-  { title: '黑神话悟空手游配置要求', category: '娱乐', heat: 96, icon: 'Gamepad2' },
-  { title: '小米澎湃OS省电设置全攻略', category: '极客', heat: 89, icon: 'Smartphone' },
-  { title: '二三线城市最火的小本生意', category: '社会', heat: 93, icon: 'Briefcase' },
-  { title: '养老金最新调整方案解读', category: '社会', heat: 94, icon: 'Briefcase' },
-  { title: '适合安卓系统的视频剪辑神器', category: '工具', heat: 91, icon: 'Smartphone' },
-  { title: 'OPPO手机拍照隐藏参数设置', category: '极客', heat: 88, icon: 'Smartphone' },
-  { title: '低成本家庭日常收纳妙招', category: '生活', heat: 87, icon: 'HeartPulse' },
-  { title: '职场人必学的Excel提效公式', category: '效率', heat: 90, icon: 'Briefcase' },
-  { title: '近期抖音最火的热梗表情包', category: '娱乐', heat: 97, icon: 'Gamepad2' },
-  { title: '安卓平板如何变身生产力工具', category: '工具', heat: 86, icon: 'Smartphone' },
-  { title: '适合初学者的简单减脂操', category: '生活', heat: 89, icon: 'HeartPulse' },
-  { title: '大学生如何兼职做自媒体', category: '社会', heat: 92, icon: 'Briefcase' },
-  { title: '手机游戏防沉迷解除新规', category: '娱乐', heat: 95, icon: 'Gamepad2' },
-];
+const CACHE_KEY = 'trendburst_daily_reco';
+const CACHE_TIME_KEY = 'trendburst_last_fetch';
 
 function App() {
   const [topic, setTopic] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecommendsLoading, setIsRecommendsLoading] = useState(false);
   const [data, setData] = useState<AnalysisResult | null>(null);
+  const [recommends, setRecommends] = useState<RecommendTopic[]>([]);
   const [sources, setSources] = useState<{ title: string, uri: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // 初始化获取数据逻辑：检查缓存，超过24小时则重新获取
+  useEffect(() => {
+    const loadRecommendations = async () => {
+      const cachedData = localStorage.getItem(CACHE_KEY);
+      const lastFetch = localStorage.getItem(CACHE_TIME_KEY);
+      const now = Date.now();
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+
+      if (cachedData && lastFetch && (now - parseInt(lastFetch) < ONE_DAY)) {
+        setRecommends(JSON.parse(cachedData));
+      } else {
+        setIsRecommendsLoading(true);
+        const freshData = await fetchDailyRecommendations();
+        if (freshData && freshData.length > 0) {
+          setRecommends(freshData);
+          localStorage.setItem(CACHE_KEY, JSON.stringify(freshData));
+          localStorage.setItem(CACHE_TIME_KEY, now.toString());
+        }
+        setIsRecommendsLoading(false);
+      }
+    };
+
+    loadRecommendations();
+  }, []);
 
   const handleSearch = async (targetTopic?: string) => {
     const finalTopic = targetTopic || topic;
@@ -77,7 +87,7 @@ function App() {
           </div>
           <div className="flex items-center gap-4">
              <span className="hidden sm:inline-block text-xs font-medium text-gray-400 border border-gray-200 px-2 py-1 rounded bg-gray-50 uppercase">User Persona: Android Core</span>
-             <a href="#" className="text-sm text-gray-500 hover:text-gray-900 font-medium">版本定价</a>
+             <a href="#" className="text-sm text-gray-500 hover:text-gray-900 font-medium">混元版 1.2</a>
           </div>
         </div>
       </header>
@@ -127,40 +137,50 @@ function App() {
           </form>
         </div>
 
-        {/* Daily Recommendations - Hidden when results are shown */}
+        {/* Daily Recommendations */}
         {!data && !isLoading && (
           <section className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
                 <Flame className="w-5 h-5 text-orange-500 mr-2" />
                 今日爆款挖掘建议
-                <span className="ml-3 text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">基于应用宝用户画像</span>
+                <span className="ml-3 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-wider">每24小时实时更新</span>
               </h2>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {DAILY_RECOMMENDS.map((rec, idx) => (
-                <div 
-                  key={idx}
-                  onClick={() => handleSearch(rec.title)}
-                  className="group cursor-pointer bg-white p-5 rounded-2xl border border-gray-200 hover:border-brand-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-2.5 bg-brand-50 text-brand-600 rounded-xl group-hover:bg-brand-600 group-hover:text-white transition-colors">
-                      {renderIcon(rec.icon)}
+              {isRecommendsLoading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 animate-pulse h-32 flex flex-col justify-between">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                  </div>
+                ))
+              ) : (
+                recommends.map((rec, idx) => (
+                  <div 
+                    key={idx}
+                    onClick={() => handleSearch(rec.title)}
+                    className="group cursor-pointer bg-white p-5 rounded-2xl border border-gray-200 hover:border-brand-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-2.5 bg-brand-50 text-brand-600 rounded-xl group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                        {renderIcon(rec.icon)}
+                      </div>
+                      <div className="flex items-center text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                        <Flame className="w-3 h-3 mr-0.5" />
+                        {rec.heat}%
+                      </div>
                     </div>
-                    <div className="flex items-center text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                      <Flame className="w-3 h-3 mr-0.5" />
-                      {rec.heat}%
+                    <h3 className="text-base font-bold text-gray-800 group-hover:text-brand-600 transition-colors mb-2 leading-tight">{rec.title}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{rec.category}</span>
+                      <span className="text-[10px] text-brand-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">点击挖掘 →</span>
                     </div>
                   </div>
-                  <h3 className="text-base font-bold text-gray-800 group-hover:text-brand-600 transition-colors mb-2 leading-tight">{rec.title}</h3>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{rec.category}</span>
-                    <span className="text-[10px] text-brand-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">点击挖掘 →</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
         )}
@@ -178,29 +198,29 @@ function App() {
           <ResultCard result={data} sources={sources} />
         )}
 
-        {/* Feature Grid (Optional secondary display) */}
+        {/* Feature Grid */}
         {!data && !isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24 border-t border-gray-100 pt-16 opacity-80">
             <div className="text-center p-6">
               <div className="bg-blue-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-5 text-brand-600">
                 <Search className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">全网数据聚合</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">实时整合多平台数据，专为安卓应用分发场景设计的挖掘模型。</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">混元引擎驱动</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">基于腾讯混元大模型，提供最懂中国用户的搜索趋势分析。</p>
             </div>
             <div className="text-center p-6">
               <div className="bg-green-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-5 text-green-600">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">深度洞察生成</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">不仅仅是关键词，还提供标题建议与趋势分析，助力内容出圈。</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">每日动态推荐</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">系统每24小时自动刷新选题，确保你永远站在爆款的第一线。</p>
             </div>
             <div className="text-center p-6">
               <div className="bg-purple-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-5 text-purple-600">
                 <BarChart3 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">用户画像匹配</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">根据腾讯应用宝真实大盘用户特征，推荐高点击率的话题类型。</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">精准画像匹配</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">针对安卓应用分发画像深度定制，让每一次内容创作都有高转化。</p>
             </div>
           </div>
         )}

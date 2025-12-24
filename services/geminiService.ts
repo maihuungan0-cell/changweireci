@@ -1,6 +1,28 @@
-import { AnalysisResult, Platform } from "../types";
 
-// 现在该服务调用我们自己的后端 API（由腾讯混元驱动）
+import { AnalysisResult, Platform, RecommendTopic } from "../types";
+
+export const fetchDailyRecommendations = async (): Promise<RecommendTopic[]> => {
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isRecommendRequest: true, topic: 'DAILY_RECO' }),
+    });
+
+    if (!response.ok) throw new Error("获取推荐失败");
+
+    const resJson = await response.json();
+    const text = resJson.text || "[]";
+    
+    // 清理可能存在的 Markdown 代码块
+    const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleanText) as RecommendTopic[];
+  } catch (error) {
+    console.error("Fetch recommendations error:", error);
+    return [];
+  }
+};
+
 export const analyzeTopic = async (topic: string): Promise<{ data: AnalysisResult, sources: { title: string, uri: string }[] }> => {
   try {
     const response = await fetch('/api/analyze', {
@@ -11,55 +33,18 @@ export const analyzeTopic = async (topic: string): Promise<{ data: AnalysisResul
       body: JSON.stringify({ topic }),
     });
 
-    const contentType = response.headers.get("content-type");
-    
-    // 如果返回的不是 JSON (例如 Vercel 的 500 错误页面通常是 HTML)
-    if (!contentType || !contentType.includes("application/json")) {
-       const textBody = await response.text();
-       console.error("Critical API Error (Non-JSON response):", textBody);
-       // 尝试从 HTML 中提取错误信息（如果有的话），或者直接抛出通用错误
-       throw new Error(`服务器连接失败 (${response.status})。请检查 Vercel 函数日志或环境变量配置。`);
-    }
-
     const resJson = await response.json();
-
-    if (!response.ok) {
-      // 展示后端返回的具体错误信息
-      throw new Error(resJson.error || resJson.details || `请求失败: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(resJson.error || "分析请求失败");
 
     const text = resJson.text || "";
+    const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    // Parse JSON safely
-    let jsonString = text;
-    // Attempt to strip markdown code blocks if present
-    const codeBlockMatch = text.match(/```json([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      jsonString = codeBlockMatch[1];
-    } else {
-       // Sometimes it wraps in just ```
-       const simpleBlockMatch = text.match(/```([\s\S]*?)```/);
-       if (simpleBlockMatch) {
-         jsonString = simpleBlockMatch[1];
-       }
-    }
-
-    // 混元目前不返回具体的引用链接源数据，因此返回空数组
-    const sources: { title: string, uri: string }[] = [];
-
-    try {
-      const data = JSON.parse(jsonString) as AnalysisResult;
-      // Normalize platform names just in case
-      data.keywords = data.keywords.map(k => ({
-        ...k,
-        platform: Object.values(Platform).includes(k.platform as Platform) ? k.platform as Platform : Platform.OTHER
-      }));
-      return { data, sources };
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", jsonString);
-      throw new Error("AI 返回的数据格式有误，请重试。");
-    }
-
+    const data = JSON.parse(cleanText) as AnalysisResult;
+    data.keywords = data.keywords.map(k => ({
+      ...k,
+      platform: Object.values(Platform).includes(k.platform as Platform) ? k.platform as Platform : Platform.OTHER
+    }));
+    return { data, sources: [] };
   } catch (error: any) {
     console.error("API Error:", error);
     throw new Error(error.message || "分析过程中发生错误");
