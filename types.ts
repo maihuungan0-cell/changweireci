@@ -1,3 +1,4 @@
+
 export enum Platform {
   WECHAT = 'WeChat',
   BAIDU = 'Baidu',
@@ -23,4 +24,11 @@ export interface AnalysisResult {
 export interface GroundingSource {
   title: string;
   url: string;
+}
+
+export interface RecommendTopic {
+  title: string;
+  category: string;
+  heat: number;
+  icon: string;
 }

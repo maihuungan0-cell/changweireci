@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Search, 
@@ -11,7 +12,13 @@ import {
   Copy,
   CheckCircle,
   BarChart3,
-  Loader2
+  Loader2,
+  Flame,
+  RefreshCw,
+  Smartphone,
+  HeartPulse,
+  Briefcase,
+  Gamepad2
 } from 'lucide-react';
 import { Platform } from '../types';
 
@@ -20,7 +27,7 @@ export const PlatformIcon: React.FC<{ platform: Platform, className?: string }> 
     case Platform.WECHAT:
       return <MessageCircle className={`text-green-600 ${className}`} />;
     case Platform.BAIDU:
-      return <Globe className={`text-blue-600 ${className}`} />; // Baidu represented by Globe/Paw usually
+      return <Globe className={`text-blue-600 ${className}`} />; 
     case Platform.ZHIHU:
       return <BookOpen className={`text-blue-500 ${className}`} />;
     default:
@@ -33,7 +40,7 @@ export const TrendIcon: React.FC<{ trend: 'up' | 'down' | 'stable' }> = ({ trend
     case 'up':
       return <TrendingUp className="w-4 h-4 text-red-500" />;
     case 'down':
-      return <TrendingDown className="w-4 h-4 text-green-500" />; // Green is down in finance, but red is hot. Let's stick to Red=Hot/Up
+      return <TrendingDown className="w-4 h-4 text-green-500" />;
     case 'stable':
       return <Minus className="w-4 h-4 text-gray-400" />;
   }
@@ -45,5 +52,11 @@ export {
   Copy, 
   CheckCircle, 
   BarChart3,
-  Loader2 
+  Loader2,
+  Flame,
+  RefreshCw,
+  Smartphone,
+  HeartPulse,
+  Briefcase,
+  Gamepad2
 };
