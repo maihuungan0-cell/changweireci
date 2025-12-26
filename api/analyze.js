@@ -28,16 +28,21 @@ export default async function handler(req, res) {
   let systemPrompt = "";
   if (isRecommendRequest) {
     systemPrompt = `
-      你是一位精通中国互联网趋势的专家。请根据今日全网热点（微信、百度、抖音、知乎），为安卓手机（应用宝）用户群体生成16个最具爆款潜力的选题。
-      涵盖：手机系统优化、养生常识、职场效率、下沉市场副业、热门娱乐。
+      你是一位深耕中国下沉市场、精通安卓大盘用户行为的内容策划专家。请为【应用宝安卓用户】（画像：22-45岁为主，2-5线城市居多，55%男性，多使用华为、小米、OPPO手机）生成16个极具针对性和精准度的爆款选题。
       
+      选题要求：
+      1. 拒绝空泛：不要“理财技巧”，要“2024年度个税汇算清缴实操：手把手教你如何退到几千块”；不要“做饭教程”，要“‘蛋神’秘籍：剥开不粘壳且蛋黄流心的煮蛋绝招”。
+      2. 强针对性：结合近期社会热点或政策（如：年底退税、社保新规）、热门剧集（如：深度拆解《上海女子图鉴》职场逻辑）、特定手机品牌优化（如：华为鸿蒙系统极致清理空间法）。
+      3. 覆盖领域：涵盖【极客优化】、【民生政策】、【下沉市场省钱攻略】、【健康养生（针对中青年久坐/司机人群）】、【热门影视生活化拆解】。
+      4. 每日更新感：确保选题具有“当下”的紧迫感和吸引力。
+
       请严格按以下 JSON 数组格式返回，不要包含 markdown 格式：
       [
         {
-          "title": "具体选题名称",
-          "category": "极客" | "生活" | "效率" | "娱乐" | "社会",
-          "heat": 0-100间的数字,
-          "icon": "Smartphone" | "HeartPulse" | "Briefcase" | "Gamepad2"
+          "title": "极具诱惑力的精准选题名称",
+          "category": "极客" | "政策" | "效率" | "娱乐" | "省钱",
+          "heat": 85-99间的随机高热度数字,
+          "icon": "Smartphone" | "HeartPulse" | "Briefcase" | "Gamepad2" | "Wallet" | "Zap"
         }
       ]
       (共16个条目)
@@ -71,7 +76,7 @@ export default async function handler(req, res) {
   const payloadObj = {
     Model: MODEL_ID,
     Messages: [{ Role: "user", Content: systemPrompt }],
-    Temperature: 0.7
+    Temperature: 0.8
   };
   const payload = JSON.stringify(payloadObj);
 
