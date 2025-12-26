@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Sparkles, BarChart3, Flame, Smartphone, HeartPulse, Briefcase, Gamepad2 } from './components/Icons';
-import { analyzeTopic, fetchDailyRecommendations } from './services/geminiService';
+import { Search, Loader2, Sparkles, BarChart3, Flame, CategoryIcon } from './components/Icons';
+import { analyzeTopic, fetchDailyRecommendations } from './services/apiService';
 import { AnalysisResult, RecommendTopic } from './types';
 import ResultCard from './components/ResultCard';
 
-const CACHE_KEY = 'trendburst_daily_reco';
-const CACHE_TIME_KEY = 'trendburst_last_fetch';
+const CACHE_KEY = 'trendburst_v3_reco';
+const CACHE_TIME_KEY = 'trendburst_v3_fetch';
 
 function App() {
   const [topic, setTopic] = useState('');
@@ -14,10 +14,8 @@ function App() {
   const [isRecommendsLoading, setIsRecommendsLoading] = useState(false);
   const [data, setData] = useState<AnalysisResult | null>(null);
   const [recommends, setRecommends] = useState<RecommendTopic[]>([]);
-  const [sources, setSources] = useState<{ title: string, uri: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // 初始化获取数据逻辑：检查缓存，超过24小时则重新获取
   useEffect(() => {
     const loadRecommendations = async () => {
       const cachedData = localStorage.getItem(CACHE_KEY);
@@ -29,13 +27,18 @@ function App() {
         setRecommends(JSON.parse(cachedData));
       } else {
         setIsRecommendsLoading(true);
-        const freshData = await fetchDailyRecommendations();
-        if (freshData && freshData.length > 0) {
-          setRecommends(freshData);
-          localStorage.setItem(CACHE_KEY, JSON.stringify(freshData));
-          localStorage.setItem(CACHE_TIME_KEY, now.toString());
+        try {
+          const freshData = await fetchDailyRecommendations();
+          if (freshData && freshData.length > 0) {
+            setRecommends(freshData);
+            localStorage.setItem(CACHE_KEY, JSON.stringify(freshData));
+            localStorage.setItem(CACHE_TIME_KEY, now.toString());
+          }
+        } catch (e) {
+          console.error("加载选题失败");
+        } finally {
+          setIsRecommendsLoading(false);
         }
-        setIsRecommendsLoading(false);
       }
     };
 
@@ -50,86 +53,67 @@ function App() {
     setIsLoading(true);
     setError(null);
     setData(null);
-    setSources([]);
 
     try {
-      const { data: result, sources: resultSources } = await analyzeTopic(finalTopic);
+      const result = await analyzeTopic(finalTopic);
       setData(result);
-      setSources(resultSources);
     } catch (err: any) {
-      setError(err.message || '发生了意外错误，请重试。');
+      setError(err.message || '分析过程中发生错误，请稍后再试。');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const renderIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Smartphone': return <Smartphone className="w-4 h-4" />;
-      case 'HeartPulse': return <HeartPulse className="w-4 h-4" />;
-      case 'Briefcase': return <Briefcase className="w-4 h-4" />;
-      case 'Gamepad2': return <Gamepad2 className="w-4 h-4" />;
-      default: return <Sparkles className="w-4 h-4" />;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-20">
+    <div className="min-h-screen bg-[#FDFDFF] text-gray-900 font-sans pb-20">
       
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="bg-brand-600 p-2 rounded-lg">
+      {/* 简洁导航栏 */}
+      <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="bg-brand-600 p-2 rounded-xl shadow-lg shadow-brand-200">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900 tracking-tight">TrendBurst 爆款挖掘机</span>
+            <span className="text-xl font-extrabold text-gray-900 tracking-tight">TrendBurst <span className="text-brand-600 font-medium tracking-normal">热搜挖掘机</span></span>
           </div>
           <div className="flex items-center gap-4">
-             <span className="hidden sm:inline-block text-xs font-medium text-gray-400 border border-gray-200 px-2 py-1 rounded bg-gray-50 uppercase">User Persona: Android Core</span>
-             <a href="#" className="text-sm text-gray-500 hover:text-gray-900 font-medium">混元版 1.2</a>
+             <span className="text-[10px] font-black text-brand-600 bg-brand-50 px-3 py-1 rounded-full uppercase border border-brand-100">Hunyuan Core V2</span>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+      <main className="max-w-7xl mx-auto px-4 pt-16">
         
-        {/* Hero / Input Section */}
-        <div className={`text-center max-w-3xl mx-auto transition-all duration-500 ${data ? 'mb-10 scale-95' : 'mb-16'}`}>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight mb-4">
-            挖掘全网 <span className="text-brand-600">长尾热词</span> 与爆款标题
+        {/* 搜索区 */}
+        <div className={`text-center max-w-4xl mx-auto transition-all duration-700 ease-out ${data ? 'mb-12 scale-90' : 'mb-20'}`}>
+          <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-6 leading-tight">
+            一键挖掘 <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-500">爆款长尾热词</span>
           </h1>
-          <p className="text-lg text-gray-600 mb-8">
-            分析微信、百度、知乎搜索趋势，生成针对应用宝用户的深度洞察。
+          <p className="text-xl text-gray-500 mb-10 font-medium max-w-2xl mx-auto">
+            输入选题主题，腾讯混元 AI 为您深度分析搜索趋势并生成高点击标题。
           </p>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-2xl mx-auto">
+          <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-3xl mx-auto">
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-white rounded-xl shadow-xl flex items-center p-2 border border-gray-100">
-                <Search className="w-6 h-6 text-gray-400 ml-3" />
+              <div className="absolute -inset-2 bg-gradient-to-r from-brand-400 to-indigo-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+              <div className="relative bg-white rounded-2xl shadow-2xl flex items-center p-2 border border-gray-50">
+                <Search className="w-6 h-6 text-gray-300 ml-5" />
                 <input
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="输入或选择下方热门主题..."
-                  className="flex-1 block w-full border-0 bg-transparent py-4 pl-3 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-lg focus:outline-none"
+                  placeholder="试试输入：清理内存、微信隐藏技巧、副业项目..."
+                  className="flex-1 block w-full border-0 bg-transparent py-5 pl-4 pr-4 text-gray-900 placeholder:text-gray-300 focus:ring-0 text-xl font-medium focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={isLoading || !topic.trim()}
-                  className="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-6 py-3 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl px-8 py-4 font-bold transition-all transform active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-xl shadow-brand-200"
                 >
                   {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      挖掘中
-                    </>
+                    <Loader2 className="w-6 h-6 animate-spin" />
                   ) : (
-                    <>
-                      立即挖掘
-                      <Sparkles className="w-4 h-4" />
-                    </>
+                    <>挖掘流量 <Sparkles className="w-5 h-5" /></>
                   )}
                 </button>
               </div>
@@ -137,46 +121,39 @@ function App() {
           </form>
         </div>
 
-        {/* Daily Recommendations */}
+        {/* 推荐位 */}
         {!data && !isLoading && (
-          <section className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <Flame className="w-5 h-5 text-orange-500 mr-2" />
-                今日爆款挖掘建议
-                <span className="ml-3 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-wider">每24小时实时更新</span>
+          <section className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-12 duration-1000">
+            <div className="flex items-center justify-between mb-10 px-4">
+              <h2 className="text-2xl font-black text-gray-900 flex items-center">
+                <Flame className="w-6 h-6 text-orange-500 mr-3" />
+                今日高热度选题推荐
               </h2>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {isRecommendsLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 animate-pulse h-32 flex flex-col justify-between">
-                    <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                  </div>
+                  <div key={i} className="bg-white p-6 rounded-3xl border border-gray-50 animate-pulse h-40"></div>
                 ))
               ) : (
                 recommends.map((rec, idx) => (
                   <div 
                     key={idx}
                     onClick={() => handleSearch(rec.title)}
-                    className="group cursor-pointer bg-white p-5 rounded-2xl border border-gray-200 hover:border-brand-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5"
+                    className="group cursor-pointer bg-white p-6 rounded-3xl border border-gray-100 hover:border-brand-300 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-2.5 bg-brand-50 text-brand-600 rounded-xl group-hover:bg-brand-600 group-hover:text-white transition-colors">
-                        {renderIcon(rec.icon)}
+                    <div className="flex justify-between items-start mb-5">
+                      <div className="p-3 bg-brand-50 text-brand-600 rounded-2xl group-hover:bg-brand-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-12">
+                        <CategoryIcon name={rec.icon} className="w-6 h-6" />
                       </div>
-                      <div className="flex items-center text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                        <Flame className="w-3 h-3 mr-0.5" />
+                      <div className="flex items-center text-[10px] font-black text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100">
                         {rec.heat}%
                       </div>
                     </div>
-                    <h3 className="text-base font-bold text-gray-800 group-hover:text-brand-600 transition-colors mb-2 leading-tight">{rec.title}</h3>
+                    <h3 className="text-lg font-black text-gray-800 group-hover:text-brand-600 transition-colors mb-3 leading-tight">{rec.title}</h3>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{rec.category}</span>
-                      <span className="text-[10px] text-brand-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">点击挖掘 →</span>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">{rec.category}</span>
                     </div>
                   </div>
                 ))
@@ -185,44 +162,16 @@ function App() {
           </section>
         )}
 
-        {/* Error State */}
+        {/* 错误提示 */}
         {error && (
-          <div className="max-w-3xl mx-auto bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-center mb-10">
-            <p className="font-semibold">分析失败</p>
-            <p className="text-sm mt-1 opacity-90">{error}</p>
+          <div className="max-w-2xl mx-auto bg-red-50 border border-red-100 text-red-600 px-8 py-6 rounded-3xl text-center mb-10">
+            <p className="font-black">挖掘失败：{error}</p>
           </div>
         )}
 
-        {/* Results */}
+        {/* 结果展示 */}
         {data && (
-          <ResultCard result={data} sources={sources} />
-        )}
-
-        {/* Feature Grid */}
-        {!data && !isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24 border-t border-gray-100 pt-16 opacity-80">
-            <div className="text-center p-6">
-              <div className="bg-blue-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-5 text-brand-600">
-                <Search className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">混元引擎驱动</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">基于腾讯混元大模型，提供最懂中国用户的搜索趋势分析。</p>
-            </div>
-            <div className="text-center p-6">
-              <div className="bg-green-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-5 text-green-600">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">每日动态推荐</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">系统每24小时自动刷新选题，确保你永远站在爆款的第一线。</p>
-            </div>
-            <div className="text-center p-6">
-              <div className="bg-purple-100 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-5 text-purple-600">
-                <BarChart3 className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">精准画像匹配</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">针对安卓应用分发画像深度定制，让每一次内容创作都有高转化。</p>
-            </div>
-          </div>
+          <ResultCard result={data} />
         )}
 
       </main>

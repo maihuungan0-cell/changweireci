@@ -1,5 +1,5 @@
 {
-  "name": "TrendBurst 爆款挖掘机",
-  "description": "一款由腾讯混元大模型驱动的 SEO 工具，分析微信、百度、知乎搜索趋势，提供高热度长尾关键词并生成爆款文章标题。",
+  "name": "TrendBurst 爆款挖掘机 - 腾讯混元版",
+  "description": "基于腾讯混元大模型，深度挖掘全网（微信、百度、知乎）热搜关键词，助力自媒体作者捕捉实时流量热点并生成爆款标题。",
   "requestFramePermissions": []
 }

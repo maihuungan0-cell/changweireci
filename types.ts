@@ -3,6 +3,8 @@ export enum Platform {
   WECHAT = 'WeChat',
   BAIDU = 'Baidu',
   ZHIHU = 'Zhihu',
+  XIAOHONGSHU = 'Xiaohongshu',
+  DOUYIN = 'Douyin',
   OTHER = 'Other'
 }
 
@@ -14,16 +16,17 @@ export interface KeywordItem {
   reasoning: string;
 }
 
+export interface GroundingSource {
+  title: string;
+  uri: string;
+}
+
 export interface AnalysisResult {
   topic: string;
   keywords: KeywordItem[];
   generatedTitles: string[];
   summary: string;
-}
-
-export interface GroundingSource {
-  title: string;
-  url: string;
+  sources?: GroundingSource[];
 }
 
 export interface RecommendTopic {
