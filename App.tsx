@@ -5,7 +5,7 @@ import { analyzeTopic, fetchDailyRecommendations } from './services/apiService';
 import { AnalysisResult, RecommendTopic } from './types';
 import ResultCard from './components/ResultCard';
 
-const CACHE_KEY = 'trend_ds_v3_reco';
+const CACHE_KEY = 'trend_ds_v3_reco_v2';
 
 function App() {
   const [topic, setTopic] = useState('');
@@ -13,6 +13,7 @@ function App() {
   const [data, setData] = useState<AnalysisResult | null>(null);
   const [recommends, setRecommends] = useState<RecommendTopic[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loadingStep, setLoadingStep] = useState(0);
 
   useEffect(() => {
     const initData = async () => {
@@ -29,6 +30,25 @@ function App() {
     };
     initData();
   }, []);
+
+  // 加载状态提示循环
+  useEffect(() => {
+    let timer: number;
+    if (isLoading) {
+      timer = window.setInterval(() => {
+        setLoadingStep(prev => (prev + 1) % 3);
+      }, 3000);
+    } else {
+      setLoadingStep(0);
+    }
+    return () => clearInterval(timer);
+  }, [isLoading]);
+
+  const loadingTexts = [
+    "DeepSeek 正在构建流量模型...",
+    "正在精选 6 个核心价值关键词...",
+    "正在打磨 4 个爆款标题建议..."
+  ];
 
   const onDigging = async (queryTopic?: string) => {
     const target = (queryTopic || topic || "").trim();
@@ -159,9 +179,19 @@ function App() {
 
         {isLoading && (
           <div className="fixed inset-0 bg-white/95 backdrop-blur-xl z-[100] flex flex-col items-center justify-center">
-            <Loader2 className="w-16 h-16 text-brand-600 animate-spin mb-6" />
-            <h3 className="text-2xl font-black text-slate-900">DeepSeek 正在深度思考...</h3>
-            <p className="text-slate-500 mt-2 font-medium">正在基于 V3 引擎构建流量价值模型，请稍候</p>
+            <div className="relative mb-10">
+               <div className="absolute inset-0 bg-brand-500/20 blur-3xl rounded-full animate-pulse"></div>
+               <Loader2 className="w-16 h-16 text-brand-600 animate-spin relative" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 transition-all duration-500">
+              {loadingTexts[loadingStep]}
+            </h3>
+            <div className="mt-6 flex gap-2">
+              {[0, 1, 2].map(i => (
+                <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === loadingStep ? 'bg-brand-600 w-8' : 'bg-brand-200'}`}></div>
+              ))}
+            </div>
+            <p className="text-slate-400 mt-8 font-medium text-sm">V3 引擎极速分析中，预计 5-8 秒...</p>
           </div>
         )}
 

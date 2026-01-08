@@ -16,20 +16,29 @@ export default async function handler(req, res) {
 
   let systemPrompt = "";
   if (isRecommendRequest) {
-    systemPrompt = `你是一位精通互联网流量逻辑的顶级专家。今天是 ${dateStr}。请基于当前季节性趋势和行业热点，生成 16 个爆款选题。要求：输出纯 JSON 格式。
-    { "topics": [ {"title": "标题", "category": "分类", "heat": 85-99, "icon": "图标名"} ] }`;
+    // 推荐请求：减少数量至 12 个以提速
+    systemPrompt = `你是一位顶级流量专家。今天是 ${dateStr}。生成 12 个当前最火的爆款选题。
+    要求：输出纯 JSON 格式，不要包含任何解释。
+    格式：{ "topics": [ {"title": "标题", "category": "分类", "heat": 85-99, "icon": "图标名"} ] }
+    图标名限选: Wallet, Briefcase, Zap, Heart, Camera, Coffee, Brain, Smartphone, Gamepad2, TrendingUp`;
   } else {
-    systemPrompt = `你是一位资深 SEO 专家。针对主题 "${topic}"，结合 ${dateStr} 的背景，挖掘 10 个高价值热搜关键词并分析原因，同时生成 6 个爆款标题。要求：输出纯 JSON 格式。
+    // 深度挖掘：精简数量，限制字数以极速响应
+    systemPrompt = `你是一位资深 SEO 专家。针对主题 "${topic}"，结合 ${dateStr} 背景进行极速分析。
+    要求：
+    1. 挖掘 6 个核心关键词（不要 10 个，只要最精选的 6 个）。
+    2. reasoning 分析必须控制在 30 字以内，简明扼要。
+    3. 生成 4 个爆款标题。
+    4. 输出纯 JSON，严禁任何前导说明。
+    格式：
     {
       "topic": "${topic}",
-      "summary": "趋势总结",
-      "keywords": [ { "keyword": "词", "heatScore": 0-100, "platform": "WeChat", "trend": "up", "reasoning": "分析" } ],
-      "generatedTitles": ["标题1", "标题2"]
+      "summary": "一句话核心趋势总结",
+      "keywords": [ { "keyword": "词", "heatScore": 0-100, "platform": "WeChat", "trend": "up", "reasoning": "简短原因" } ],
+      "generatedTitles": ["标题1", "标题2", "标题3", "标题4"]
     }`;
   }
 
   try {
-    // 使用 AbortController 增加超时控制
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 55000);
 
@@ -40,12 +49,13 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: "deepseek-chat", // 切换到 V3，速度极快
+        model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: isRecommendRequest ? "生成今日热点" : `分析 "${topic}"` }
+          { role: "user", content: isRecommendRequest ? "立即生成今日热点 JSON" : `极速分析 "${topic}"` }
         ],
-        temperature: 0.7
+        temperature: 0.6, // 降低随机性，提高输出速度和稳定性
+        max_tokens: 1500 // 限制最大 Token 数量
       }),
       signal: controller.signal
     });
