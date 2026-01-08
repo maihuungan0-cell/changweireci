@@ -1,5 +1,5 @@
 {
-  "name": "TrendBurst 爆款挖掘机 - DeepSeek 版",
-  "description": "集成 DeepSeek-V3 顶尖推理大模型，深度挖掘全网（微信、百度、知乎）热搜关键词，助力自媒体作者捕捉 2026 实时流量热点并生成爆款标题。",
+  "name": "TrendBurst 爆款挖掘机 - 联网 DeepSeek 版",
+  "description": "集成 DeepSeek-R1 推理模型与实时联网搜索能力，深度挖掘全网（微信、百度、知乎）真实热搜关键词，捕捉今日流量热点并生成爆款标题。",
   "requestFramePermissions": []
 }

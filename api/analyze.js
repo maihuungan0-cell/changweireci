@@ -14,17 +14,19 @@ export default async function handler(req, res) {
   }
 
   const now = new Date();
-  const dateStrForPrompt = `2026年${now.getMonth() + 1}月${now.getDate()}日`;
+  // 核心修复：使用真实当前日期，不再诱导模型幻想未来
+  const dateStrForPrompt = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 
   let systemPrompt = "";
   if (isRecommendRequest) {
     systemPrompt = `
-      你是一位精通流量热点的专家级分析师。今天是 ${dateStrForPrompt}。
-      请通过深度思考，生成16个具有前瞻性和高点击潜力的爆款选题。
+      你是一位精通全网流量热点的专家级分析师。今天是 ${dateStrForPrompt}。
+      请通过【联网搜索】并结合深度思考，生成16个当前真实存在且具有爆发潜力的爆款选题。
       要求：
       1. 标题极其精炼，严格控制在 15 字以内。
-      2. 类型多元：涵盖2026年政策动态、前沿数码、职场心理、搞钱路子、生活玄学、小众健康等。
-      3. 输出格式必须是纯 JSON，不得包含任何 Markdown 格式（如 \`\`\`json 标签）。
+      2. 必须是基于【今日热搜】或【真实社会事件】的选题，严禁虚构不存在的影视剧或新闻。
+      3. 类型多元：涵盖政策动态、数码热点、职场心理、搞钱路子、生活技巧等。
+      4. 输出格式必须是纯 JSON，不得包含 Markdown 标签。
       结构如下：
       {
         "topics": [
@@ -35,19 +37,19 @@ export default async function handler(req, res) {
   } else {
     systemPrompt = `
       你是一位资深 SEO 策略专家。现在是 ${dateStrForPrompt}。
-      请通过深度思考，分析主题："${topic}" 在 2026 年的搜索趋势。
+      请通过【联网搜索】深度分析主题："${topic}" 在当下的真实搜索趋势。
       输出格式必须是纯 JSON，不得包含 Markdown 标签。
       结构如下：
       {
         "topic": "${topic}",
-        "summary": "基于深度推理的趋势总结",
+        "summary": "基于联网搜索和深度推理的真实趋势总结",
         "keywords": [
           {
             "keyword": "关键词",
             "heatScore": 0-100,
             "platform": "WeChat" | "Baidu" | "Zhihu",
             "trend": "up" | "down" | "stable",
-            "reasoning": "深度思考后的热度依据"
+            "reasoning": "结合今日真实热度的深度分析依据"
           }
         ],
         "generatedTitles": ["爆款标题1", "爆款标题2", "爆款标题3", "爆款标题4", "爆款标题5", "爆款标题6"]
@@ -63,13 +65,14 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: "deepseek-reasoner", // 切换到深度思考模型
+        model: "deepseek-reasoner",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: isRecommendRequest ? "开始你的深度思考并生成今日 16 个精选选题" : `请深度分析主题: ${topic}` }
+          { role: "user", content: isRecommendRequest ? "请执行联网搜索并生成今日选题" : `请联网分析主题: ${topic}` }
         ],
-        // 注意：deepseek-reasoner 不支持 response_format: { type: 'json_object' }
-        temperature: 0.7
+        // 集成联网搜索参数
+        "search_enable": true,
+        "temperature": 0.7
       })
     });
 
@@ -85,6 +88,6 @@ export default async function handler(req, res) {
     const content = data.choices[0].message.content || "{}";
     return res.status(200).json({ text: content });
   } catch (error) {
-    return res.status(500).json({ error: `网络请求失败: ${error.message}` });
+    return res.status(500).json({ error: `联网分析请求失败: ${error.message}` });
   }
 }
