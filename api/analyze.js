@@ -19,12 +19,15 @@ export default async function handler(req, res) {
   let systemPrompt = "";
   if (isRecommendRequest) {
     systemPrompt = `
-      你是一位精通中国自媒体流量热点的专家。今天是 ${dateStrForPrompt}。
-      请为安卓手机用户（华为、小米、OPPO等）生成16个当下的高点击爆款选题。
+      你是一位精通流量热点的专家。今天是 ${dateStrForPrompt}。
+      请生成16个高点击爆款选题。要求：
+      1. 标题必须极其精炼，严格控制在 15 字以内。
+      2. 选题要鲜明明确，一眼就能看懂价值。
+      3. 类型必须多元化：涵盖 2026 年政策动态（个税、医保）、数码黑科技（安卓优化）、职场生存、省钱路子、生活玄学技巧、爆款副业、小众旅游等。
       你必须返回一个包含 "topics" 键的对象。
       {
         "topics": [
-          {"title": "选题名称", "category": "分类", "heat": 85-99, "icon": "Smartphone|HeartPulse|Briefcase|Gamepad2|Wallet|Zap"}
+          {"title": "精炼标题(15字内)", "category": "分类", "heat": 85-99, "icon": "Smartphone|HeartPulse|Briefcase|Gamepad2|Wallet|Zap|Camera|Coffee|Brain"}
         ]
       }
     `;
@@ -60,7 +63,7 @@ export default async function handler(req, res) {
         model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: isRecommendRequest ? "生成今日选题" : `分析主题: ${topic}` }
+          { role: "user", content: isRecommendRequest ? "生成今日 16 个多元化且精炼的选题" : `分析主题: ${topic}` }
         ],
         response_format: { type: 'json_object' },
         temperature: 0.7

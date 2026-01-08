@@ -8,16 +8,20 @@ import ResultCard from './components/ResultCard';
 const CACHE_KEY = 'trendburst_v3_reco';
 const CACHE_TIME_KEY = 'trendburst_v3_fetch_date';
 
-// 2026 年离线兜底选题 (当 API 余额不足时展示)
+// 2026 年离线兜底选题 - 标题严格控制在 15 字以内，类型更丰富
 const FALLBACK_RECOMMENDS: RecommendTopic[] = [
-  { title: "2026年个税汇算实操指南", category: "政策", heat: 98, icon: "Wallet" },
-  { title: "手机内存清理：彻底删除隐藏的大文件", category: "效率", heat: 96, icon: "Smartphone" },
-  { title: "二线城市低成本创业项目清单", category: "省钱", heat: 94, icon: "Briefcase" },
-  { title: "华为/小米手机关闭广告的最终方案", category: "效率", heat: 92, icon: "Zap" },
-  { title: "2026最新城乡居民医保补贴申领", category: "政策", heat: 91, icon: "HeartPulse" },
-  { title: "普通人如何复刻短视频爆款脚本", category: "娱乐", heat: 89, icon: "Gamepad2" },
-  { title: "半熟蛋火候精准控制秘籍", category: "生活", heat: 88, icon: "Zap" },
-  { title: "微信隐藏的4个超实用办公功能", category: "效率", heat: 87, icon: "Smartphone" }
+  { title: "2026年个税汇算避坑指南", category: "政策", heat: 98, icon: "Wallet" },
+  { title: "安卓手机深度清理隐藏垃圾", category: "数码", heat: 96, icon: "Smartphone" },
+  { title: "二线城市低门槛副业合集", category: "搞钱", heat: 94, icon: "Briefcase" },
+  { title: "国产手机彻底关闭广告教程", category: "数码", heat: 92, icon: "Zap" },
+  { title: "居民医保补贴申领全流程", category: "民生", heat: 91, icon: "HeartPulse" },
+  { title: "如何精准复刻爆款短视频", category: "运营", heat: 89, icon: "Gamepad2" },
+  { title: "家居生活玄学：阳台布局法", category: "玄学", heat: 88, icon: "Brain" },
+  { title: "微信 4 个超实用隐藏功能", category: "效率", heat: 87, icon: "Smartphone" },
+  { title: "普通人逆袭：职场向上社交", category: "职场", heat: 86, icon: "Briefcase" },
+  { title: "春季养肝：老中医的食疗方", category: "健康", heat: 85, icon: "HeartPulse" },
+  { title: "2026小众反季旅游目的地", category: "旅游", heat: 84, icon: "Camera" },
+  { title: "咖啡拉花：3分钟入门技巧", category: "生活", heat: 83, icon: "Coffee" }
 ];
 
 function App() {
@@ -104,7 +108,7 @@ function App() {
             一键挖掘 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">爆款长尾热词</span>
           </h1>
           <p className="text-xl text-gray-500 mb-10 font-medium max-w-2xl mx-auto">
-            输入选题主题，DeepSeek AI 为您分析 2026 搜索趋势并生成爆款标题。
+            输入选题主题，AI 为您分析 2026 搜索趋势并生成爆款标题。
           </p>
 
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-3xl mx-auto">
