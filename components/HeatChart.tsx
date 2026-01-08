@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   BarChart,
@@ -12,21 +13,18 @@ import {
 import { KeywordItem, Platform } from '../types';
 
 interface HeatChartProps {
-  data: KeywordItem[];
+  data?: KeywordItem[];
 }
 
-// 自定义 Y 轴标签组件，支持自动换行
 const CustomYAxisTick = (props: any) => {
   const { x, y, payload } = props;
-  const value = payload.value as string;
+  const value = (payload.value || '') as string;
   
-  // 换行逻辑：如果超过 6 个字符，截断并分两行显示
   const maxLength = 6;
   let lines = [];
   if (value.length > maxLength) {
     lines.push(value.substring(0, maxLength));
     let remaining = value.substring(maxLength);
-    // 如果第二行还是很长，就截断加省略号
     if (remaining.length > maxLength) {
         remaining = remaining.substring(0, maxLength - 1) + '...';
     }
@@ -48,20 +46,30 @@ const CustomYAxisTick = (props: any) => {
   );
 };
 
-const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
-  // Sort by heat score descending and take top 10
-  const chartData = [...data]
-    .sort((a, b) => b.heatScore - a.heatScore)
+const HeatChart: React.FC<HeatChartProps> = ({ data = [] }) => {
+  // 确保 data 是数组
+  const safeData = Array.isArray(data) ? data : [];
+  
+  const chartData = [...safeData]
+    .sort((a, b) => (b.heatScore || 0) - (a.heatScore || 0))
     .slice(0, 10);
 
   const getBarColor = (platform: Platform) => {
     switch (platform) {
-      case Platform.WECHAT: return '#22c55e'; // Green
-      case Platform.BAIDU: return '#2563eb'; // Blue
-      case Platform.ZHIHU: return '#3b82f6'; // Light Blue
+      case Platform.WECHAT: return '#22c55e';
+      case Platform.BAIDU: return '#2563eb';
+      case Platform.ZHIHU: return '#3b82f6';
       default: return '#94a3b8';
     }
   };
+
+  if (safeData.length === 0) {
+    return (
+      <div className="w-full h-[300px] flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-400">
+        暂无排行数据
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[500px] bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
@@ -80,7 +88,7 @@ const HeatChart: React.FC<HeatChartProps> = ({ data }) => {
               dataKey="keyword" 
               width={130} 
               tick={<CustomYAxisTick />}
-              interval={0} // 强制显示所有标签，不跳过
+              interval={0}
             />
             <Tooltip 
               cursor={{fill: '#f8fafc'}}

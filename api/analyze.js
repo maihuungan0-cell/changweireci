@@ -21,20 +21,31 @@ export default async function handler(req, res) {
     systemPrompt = `
       你是一位精通中国自媒体流量热点的专家。今天是 ${dateStrForPrompt}。
       请为安卓手机用户（华为、小米、OPPO等）生成16个当下的高点击爆款选题。
-      
-      注意：由于使用 JSON 模式，你必须返回一个包含 "topics" 键的对象。
-      格式如下：
+      你必须返回一个包含 "topics" 键的对象。
       {
         "topics": [
-          {"title": "选题名称", "category": "分类", "heat": 85-99, "icon": "图标名称"}
+          {"title": "选题名称", "category": "分类", "heat": 85-99, "icon": "Smartphone|HeartPulse|Briefcase|Gamepad2|Wallet|Zap"}
         ]
       }
-      图标名称：Smartphone, HeartPulse, Briefcase, Gamepad2, Wallet, Zap
     `;
   } else {
     systemPrompt = `
       你是一位 SEO 专家。现在是 ${dateStrForPrompt}。请分析主题："${topic}"。
-      请以 JSON 对象格式返回，包含 topic, summary, keywords 数组, generatedTitles 数组。
+      你必须严格按照以下 JSON 结构返回数据，不要包含任何 markdown 格式：
+      {
+        "topic": "${topic}",
+        "summary": "一段关于该主题 2026 年趋势的简短总结",
+        "keywords": [
+          {
+            "keyword": "关键词名称",
+            "heatScore": 0-100之间的数字,
+            "platform": "WeChat" | "Baidu" | "Zhihu",
+            "trend": "up" | "down" | "stable",
+            "reasoning": "为什么这个词热度高"
+          }
+        ],
+        "generatedTitles": ["爆款标题1", "爆款标题2", "爆款标题3", "爆款标题4", "爆款标题5", "爆款标题6"]
+      }
     `;
   }
 
@@ -49,7 +60,7 @@ export default async function handler(req, res) {
         model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: isRecommendRequest ? "请生成 2026 年今日最新的 16 个爆款选题" : `分析主题: ${topic}` }
+          { role: "user", content: isRecommendRequest ? "生成今日选题" : `分析主题: ${topic}` }
         ],
         response_format: { type: 'json_object' },
         temperature: 0.7
@@ -59,14 +70,13 @@ export default async function handler(req, res) {
     const data = await response.json();
     
     if (data.error) {
-      // 捕获余额不足等业务错误并返回
       return res.status(200).json({ 
         error: data.error.message,
         isApiError: true 
       });
     }
 
-    const content = data.choices[0].message.content || "";
+    const content = data.choices[0].message.content || "{}";
     return res.status(200).json({ text: content });
   } catch (error) {
     return res.status(500).json({ error: `网络请求失败: ${error.message}` });
