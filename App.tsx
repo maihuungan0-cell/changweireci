@@ -1,185 +1,155 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Sparkles, BarChart3, Flame, CategoryIcon, RefreshCw } from './components/Icons';
+import { Search, Loader2, BarChart3, Flame, CategoryIcon, RefreshCw } from './components/Icons';
 import { analyzeTopic, fetchDailyRecommendations } from './services/apiService';
 import { AnalysisResult, RecommendTopic } from './types';
 import ResultCard from './components/ResultCard';
 
-const CACHE_KEY = 'trendburst_v7_reco';
-const CACHE_TIME_KEY = 'trendburst_v7_fetch_date';
-
-const FALLBACK_RECOMMENDS: RecommendTopic[] = [
-  { title: "2025年个税汇算避坑指南", category: "政策", heat: 98, icon: "Wallet" },
-  { title: "深度清理微信空间隐藏技巧", category: "数码", heat: 96, icon: "Smartphone" },
-  { title: "利用 AI 工具实现被动收入", category: "赚钱", heat: 94, icon: "Briefcase" },
-  { title: "职场心理：如何向上管理", category: "职场", heat: 89, icon: "Brain" }
-];
+const CACHE_KEY = 'trend_ds_v3_reco';
 
 function App() {
   const [topic, setTopic] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isRecommendsLoading, setIsRecommendsLoading] = useState(false);
   const [data, setData] = useState<AnalysisResult | null>(null);
   const [recommends, setRecommends] = useState<RecommendTopic[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadRecommendations = async () => {
-      const cachedData = localStorage.getItem(CACHE_KEY);
-      const lastFetchDate = localStorage.getItem(CACHE_TIME_KEY);
-      const today = new Date().toLocaleDateString();
-
-      if (cachedData && lastFetchDate === today) {
-        setRecommends(JSON.parse(cachedData));
+    const initData = async () => {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        setRecommends(JSON.parse(cached));
       } else {
-        setIsRecommendsLoading(true);
-        try {
-          const freshData = await fetchDailyRecommendations();
-          if (freshData && freshData.length > 0) {
-            setRecommends(freshData);
-            localStorage.setItem(CACHE_KEY, JSON.stringify(freshData));
-            localStorage.setItem(CACHE_TIME_KEY, today);
-          } else {
-            setRecommends(FALLBACK_RECOMMENDS);
-          }
-        } catch (e) {
-          setRecommends(FALLBACK_RECOMMENDS);
-        } finally {
-          setIsRecommendsLoading(false);
+        const fresh = await fetchDailyRecommendations();
+        if (fresh.length > 0) {
+          setRecommends(fresh);
+          localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
         }
       }
     };
-    loadRecommendations();
+    initData();
   }, []);
 
-  const handleSearch = async (targetTopic?: string) => {
-    const finalTopic = (targetTopic || topic || "").trim();
-    if (!finalTopic) return;
+  const onDigging = async (queryTopic?: string) => {
+    const target = (queryTopic || topic || "").trim();
+    if (!target) return;
 
-    if (targetTopic) setTopic(targetTopic);
+    if (queryTopic) setTopic(queryTopic);
     setIsLoading(true);
     setError(null);
+    setData(null);
 
     try {
-      const result = await analyzeTopic(finalTopic);
+      const result = await analyzeTopic(target);
       setData(result);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setError(err.message || '分析过程出错，请稍后重试。');
+      setError(err.message || 'DeepSeek 挖掘中断，请稍后重试。');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetToHome = () => {
+  const handleReset = () => {
     setData(null);
     setTopic('');
     setError(null);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans pb-20 selection:bg-brand-100 selection:text-brand-900">
-      <nav className="bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3 cursor-pointer group" onClick={resetToHome}>
-            <div className="bg-brand-600 p-2 rounded-xl shadow-lg shadow-brand-200 group-hover:scale-110 transition-transform">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans selection:bg-brand-100 selection:text-brand-900">
+      <nav className="bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 h-16 flex items-center">
+        <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={handleReset}>
+            <div className="bg-brand-600 p-1.5 rounded-lg shadow-lg">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-black text-slate-900 tracking-tight">
-              TrendBurst <span className="text-brand-600">挖掘机</span>
-            </span>
+            <span className="text-xl font-black text-slate-900 tracking-tight">TrendBurst <span className="text-brand-600">挖掘机</span></span>
           </div>
-          <div className="flex items-center gap-3">
-             <div className="hidden sm:flex text-[10px] font-bold text-brand-600 bg-brand-50 px-3 py-1.5 rounded-full border border-brand-100 uppercase tracking-widest">
-                AI Powered Search
-             </div>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+            Powered by DeepSeek V3
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-6">
         {!data && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="pt-24 pb-20 text-center max-w-4xl mx-auto">
-              <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight mb-8 leading-[1.1]">
-                掘金全网 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-600 animate-gradient-text">实时流量</span>
+              <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight mb-8">
+                全网爆款 <span className="text-brand-600">深度趋势分析</span>
               </h1>
-              <p className="text-xl text-slate-500 mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-                输入关键词，我们将通过 <b>Google Search</b> 实时分析其搜索热度、核心热词及爆款选题。
+              <p className="text-xl text-slate-500 mb-12 font-medium leading-relaxed">
+                输入关键词，利用 <b>DeepSeek-V3</b> 逻辑模型深度挖掘搜索价值与爆款关键词。
               </p>
 
-              <div className="relative max-w-3xl mx-auto mb-24">
+              <form 
+                onSubmit={(e) => { e.preventDefault(); onDigging(); }}
+                className="relative max-w-3xl mx-auto mb-20"
+              >
                 <div className="relative group">
-                  <div className="absolute -inset-1.5 bg-brand-600/20 rounded-[2rem] blur opacity-25 group-focus-within:opacity-50 transition duration-500"></div>
-                  <div className="relative bg-white rounded-3xl shadow-2xl flex items-center p-2 border border-slate-100">
+                  <div className="absolute -inset-1.5 bg-brand-600/10 rounded-3xl blur opacity-30 group-focus-within:opacity-60 transition duration-500"></div>
+                  <div className="relative bg-white rounded-2xl shadow-2xl flex items-center p-2 border border-slate-200 overflow-hidden">
                     <Search className="w-6 h-6 text-slate-300 ml-6 shrink-0" />
                     <input
                       type="text"
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      placeholder="挖掘主题：如“清理内存”、“副业”..."
+                      placeholder="挖掘主题：如“清理内存”、“搞钱思路”..."
                       className="flex-1 block w-full border-0 bg-transparent py-6 pl-4 pr-4 text-slate-900 text-xl font-bold focus:ring-0 outline-none placeholder:text-slate-300"
                     />
                     <button
-                      onClick={() => handleSearch()}
+                      type="submit"
                       disabled={isLoading || !topic.trim()}
-                      className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-2xl px-10 py-5 font-black transition-all disabled:opacity-30 shadow-xl shadow-brand-200 shrink-0"
+                      className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-xl px-10 py-5 font-black transition-all disabled:opacity-30 shadow-xl shadow-brand-200 shrink-0"
                     >
                       {isLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : "立即挖掘"}
                     </button>
                   </div>
                 </div>
-              </div>
+              </form>
             </div>
 
-            <section className="max-w-6xl mx-auto pb-20">
-              <div className="flex items-center justify-between mb-10">
-                <h2 className="text-2xl font-black flex items-center tracking-tight text-slate-800">
+            {recommends.length > 0 && (
+              <section className="max-w-6xl mx-auto">
+                <h2 className="text-2xl font-black mb-8 flex items-center text-slate-800">
                   <Flame className="w-6 h-6 text-orange-500 mr-2" />
-                  今日趋势热点
+                  今日趋势参考
                 </h2>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {isRecommendsLoading ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-48 bg-slate-50 animate-pulse rounded-3xl border border-slate-100"></div>
-                  ))
-                ) : (
-                  recommends.map((rec, idx) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {recommends.map((rec, idx) => (
                     <div 
                       key={idx}
-                      onClick={() => handleSearch(rec.title)}
-                      className="group cursor-pointer bg-white p-6 rounded-3xl border border-slate-100 hover:border-brand-200 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 active:scale-95 flex flex-col justify-between"
+                      onClick={() => onDigging(rec.title)}
+                      className="group cursor-pointer bg-white p-6 rounded-3xl border border-slate-100 hover:border-brand-200 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex justify-between items-start mb-6">
-                          <div className="p-3 bg-brand-50 text-brand-600 rounded-2xl group-hover:bg-brand-600 group-hover:text-white transition-all transform group-hover:rotate-12">
+                          <div className="p-3 bg-brand-50 text-brand-600 rounded-xl group-hover:bg-brand-600 group-hover:text-white transition-all">
                             <CategoryIcon name={rec.icon} className="w-6 h-6" />
                           </div>
                           <span className="text-[11px] font-black text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100">
                             {rec.heat}% 🔥
                           </span>
                         </div>
-                        <h3 className="text-lg font-black text-slate-800 line-clamp-3 leading-tight mb-4 group-hover:text-brand-700 transition-colors">
+                        <h3 className="text-lg font-black text-slate-800 leading-tight mb-4 group-hover:text-brand-700 transition-colors">
                           {rec.title}
                         </h3>
                       </div>
                       <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{rec.category}</span>
                     </div>
-                  ))
-                )}
-              </div>
-            </section>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
 
         {data && !isLoading && (
-          <div className="pt-12 animate-in slide-in-from-right-8 duration-700">
+          <div className="pt-10 animate-in slide-in-from-right-4 duration-500">
             <button 
-              onClick={resetToHome} 
-              className="mb-10 px-6 py-3 bg-white border border-slate-200 rounded-2xl flex items-center gap-2 text-slate-500 hover:text-brand-600 font-black transition-all shadow-sm active:scale-95"
+              onClick={handleReset} 
+              className="mb-10 px-6 py-3 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-slate-500 hover:text-brand-600 font-bold transition-all shadow-sm active:scale-95"
             >
               <RefreshCw className="w-4 h-4" /> 返回主页
             </button>
@@ -189,27 +159,17 @@ function App() {
 
         {isLoading && (
           <div className="fixed inset-0 bg-white/95 backdrop-blur-xl z-[100] flex flex-col items-center justify-center">
-            <div className="relative mb-8">
-               <div className="absolute inset-0 bg-brand-500/20 blur-3xl rounded-full animate-pulse"></div>
-               <Loader2 className="w-20 h-20 text-brand-600 animate-spin relative" />
-            </div>
-            <div className="text-center space-y-3 px-6 max-w-md">
-              <h3 className="text-3xl font-black text-slate-900 tracking-tight">正在挖掘全网热词...</h3>
-              <p className="text-slate-500 font-medium text-lg leading-relaxed">
-                正在通过 Google Search 检索并解析实时流量数据
-              </p>
-            </div>
+            <Loader2 className="w-16 h-16 text-brand-600 animate-spin mb-6" />
+            <h3 className="text-2xl font-black text-slate-900">DeepSeek 正在深度思考...</h3>
+            <p className="text-slate-500 mt-2 font-medium">正在基于 V3 引擎构建流量价值模型，请稍候</p>
           </div>
         )}
 
         {error && (
-          <div className="max-w-2xl mx-auto mt-20 p-10 bg-rose-50 border border-rose-100 text-rose-700 rounded-[2.5rem] text-center shadow-xl animate-in zoom-in-95 duration-300">
-            <h4 className="text-2xl font-black mb-4">挖掘中断</h4>
-            <p className="text-slate-600 font-medium mb-8 text-lg">{error}</p>
-            <button 
-              onClick={resetToHome} 
-              className="bg-rose-600 hover:bg-rose-700 text-white px-8 py-4 rounded-2xl font-black transition-all active:scale-95 shadow-lg shadow-rose-200"
-            >
+          <div className="max-w-2xl mx-auto mt-20 p-10 bg-rose-50 border border-rose-100 text-rose-700 rounded-3xl text-center shadow-lg">
+            <h4 className="text-xl font-black mb-4">挖掘暂时中断</h4>
+            <p className="text-slate-600 mb-8 font-medium">{error}</p>
+            <button onClick={handleReset} className="bg-rose-600 text-white px-8 py-4 rounded-xl font-black shadow-lg shadow-rose-200 active:scale-95 transition-all">
               返回重试
             </button>
           </div>

@@ -1,5 +1,5 @@
 {
-  "name": "TrendBurst - 深度爆款挖掘机 (Gemini Search 版)",
-  "description": "基于 Gemini 3 与 Google Search Grounding 的实时流量分析工具，精准捕捉全网热词，生成高点击爆款选题。",
+  "name": "TrendBurst 爆款挖掘机 - DeepSeek V3 智能版",
+  "description": "基于 DeepSeek-V3 引擎的实时热搜趋势挖掘工具，帮助创作者精准捕捉流量关键词并生成爆款标题。",
   "requestFramePermissions": []
 }
