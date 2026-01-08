@@ -19,32 +19,35 @@ export default async function handler(req, res) {
   let systemPrompt = "";
   if (isRecommendRequest) {
     systemPrompt = `
-      你是一位精通流量热点的专家。今天是 ${dateStrForPrompt}。
-      请生成16个高点击爆款选题。要求：
-      1. 标题必须极其精炼，严格控制在 15 字以内。
-      2. 选题要鲜明明确，一眼就能看懂价值。
-      3. 类型必须多元化：涵盖 2026 年政策动态（个税、医保）、数码黑科技（安卓优化）、职场生存、省钱路子、生活玄学技巧、爆款副业、小众旅游等。
-      你必须返回一个包含 "topics" 键的对象。
+      你是一位精通流量热点的专家级分析师。今天是 ${dateStrForPrompt}。
+      请通过深度思考，生成16个具有前瞻性和高点击潜力的爆款选题。
+      要求：
+      1. 标题极其精炼，严格控制在 15 字以内。
+      2. 类型多元：涵盖2026年政策动态、前沿数码、职场心理、搞钱路子、生活玄学、小众健康等。
+      3. 输出格式必须是纯 JSON，不得包含任何 Markdown 格式（如 \`\`\`json 标签）。
+      结构如下：
       {
         "topics": [
-          {"title": "精炼标题(15字内)", "category": "分类", "heat": 85-99, "icon": "Smartphone|HeartPulse|Briefcase|Gamepad2|Wallet|Zap|Camera|Coffee|Brain"}
+          {"title": "精炼标题", "category": "分类", "heat": 85-99, "icon": "Smartphone|HeartPulse|Briefcase|Gamepad2|Wallet|Zap|Camera|Coffee|Brain"}
         ]
       }
     `;
   } else {
     systemPrompt = `
-      你是一位 SEO 专家。现在是 ${dateStrForPrompt}。请分析主题："${topic}"。
-      你必须严格按照以下 JSON 结构返回数据，不要包含任何 markdown 格式：
+      你是一位资深 SEO 策略专家。现在是 ${dateStrForPrompt}。
+      请通过深度思考，分析主题："${topic}" 在 2026 年的搜索趋势。
+      输出格式必须是纯 JSON，不得包含 Markdown 标签。
+      结构如下：
       {
         "topic": "${topic}",
-        "summary": "一段关于该主题 2026 年趋势的简短总结",
+        "summary": "基于深度推理的趋势总结",
         "keywords": [
           {
-            "keyword": "关键词名称",
-            "heatScore": 0-100之间的数字,
+            "keyword": "关键词",
+            "heatScore": 0-100,
             "platform": "WeChat" | "Baidu" | "Zhihu",
             "trend": "up" | "down" | "stable",
-            "reasoning": "为什么这个词热度高"
+            "reasoning": "深度思考后的热度依据"
           }
         ],
         "generatedTitles": ["爆款标题1", "爆款标题2", "爆款标题3", "爆款标题4", "爆款标题5", "爆款标题6"]
@@ -60,12 +63,12 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: "deepseek-reasoner", // 切换到深度思考模型
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: isRecommendRequest ? "生成今日 16 个多元化且精炼的选题" : `分析主题: ${topic}` }
+          { role: "user", content: isRecommendRequest ? "开始你的深度思考并生成今日 16 个精选选题" : `请深度分析主题: ${topic}` }
         ],
-        response_format: { type: 'json_object' },
+        // 注意：deepseek-reasoner 不支持 response_format: { type: 'json_object' }
         temperature: 0.7
       })
     });

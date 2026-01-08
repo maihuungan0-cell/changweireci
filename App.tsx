@@ -8,7 +8,7 @@ import ResultCard from './components/ResultCard';
 const CACHE_KEY = 'trendburst_v3_reco';
 const CACHE_TIME_KEY = 'trendburst_v3_fetch_date';
 
-// 2026 年离线兜底选题 - 标题严格控制在 15 字以内，类型更丰富
+// 2026 年离线兜底选题
 const FALLBACK_RECOMMENDS: RecommendTopic[] = [
   { title: "2026年个税汇算避坑指南", category: "政策", heat: 98, icon: "Wallet" },
   { title: "安卓手机深度清理隐藏垃圾", category: "数码", heat: 96, icon: "Smartphone" },
@@ -52,7 +52,7 @@ function App() {
             setRecommends(FALLBACK_RECOMMENDS);
           }
         } catch (e) {
-          console.warn("API 无法加载（可能是余额不足），已加载兜底选题");
+          console.warn("API 无法加载，已启用深度预设选题");
           setRecommends(FALLBACK_RECOMMENDS);
         } finally {
           setIsRecommendsLoading(false);
@@ -76,7 +76,7 @@ function App() {
       const result = await analyzeTopic(finalTopic);
       setData(result);
     } catch (err: any) {
-      setError(err.message || '分析失败。请检查 DeepSeek API 余额或网络连接。');
+      setError(err.message || '挖掘失败。请检查 API 余额或网络。');
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +85,6 @@ function App() {
   return (
     <div className="min-h-screen bg-[#FDFDFF] text-gray-900 font-sans pb-20">
       
-      {/* 简洁导航栏 */}
       <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -95,20 +94,19 @@ function App() {
             <span className="text-xl font-extrabold text-gray-900 tracking-tight">TrendBurst <span className="text-indigo-600 font-medium tracking-normal">热搜挖掘机</span></span>
           </div>
           <div className="flex items-center gap-4">
-             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-wider">DeepSeek Intelligence</span>
+             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-wider">DeepSeek-R1 Reasoning</span>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 pt-16">
         
-        {/* 搜索区 */}
         <div className={`text-center max-w-4xl mx-auto transition-all duration-700 ease-out ${data ? 'mb-12 scale-90' : 'mb-20'}`}>
           <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-6 leading-tight">
-            一键挖掘 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">爆款长尾热词</span>
+            深度挖掘 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">爆款长尾热词</span>
           </h1>
           <p className="text-xl text-gray-500 mb-10 font-medium max-w-2xl mx-auto">
-            输入选题主题，AI 为您分析 2026 搜索趋势并生成爆款标题。
+            集成 R1 深度思考模型，为您提供极具逻辑性的 2026 流量分析。
           </p>
 
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-3xl mx-auto">
@@ -131,7 +129,7 @@ function App() {
                   {isLoading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
                   ) : (
-                    <>挖掘流量 <Sparkles className="w-5 h-5" /></>
+                    <>深度分析 <Sparkles className="w-5 h-5" /></>
                   )}
                 </button>
               </div>
@@ -139,13 +137,12 @@ function App() {
           </form>
         </div>
 
-        {/* 推荐位 */}
         {!data && !isLoading && (
           <section className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-12 duration-1000">
             <div className="flex items-center justify-between mb-10 px-4">
               <h2 className="text-2xl font-black text-gray-900 flex items-center">
                 <Flame className="w-6 h-6 text-orange-500 mr-3" />
-                今日高热度选题推荐
+                今日高热度选题推荐 (R1 精选)
               </h2>
             </div>
             
@@ -180,18 +177,13 @@ function App() {
           </section>
         )}
 
-        {/* 错误提示 */}
         {error && (
           <div className="max-w-2xl mx-auto bg-red-50 border border-red-100 text-red-600 px-8 py-6 rounded-3xl text-center mb-10">
             <p className="font-black mb-2">挖掘失败</p>
             <p className="text-sm opacity-80">{error}</p>
-            {error.includes('Balance') && (
-              <p className="mt-4 text-xs bg-white/50 py-2 rounded-lg">提示：您的 DeepSeek API 余额已耗尽，请前往官网充值。</p>
-            )}
           </div>
         )}
 
-        {/* 结果展示 */}
         {data && (
           <ResultCard result={data} />
         )}

@@ -20,23 +20,31 @@ async function callDeepSeekApi(payload: any) {
     throw new Error(data.error || '请求失败');
   }
 
-  const rawText = data.text || "{}";
+  let rawText = data.text || "{}";
+  
+  // 关键步骤：过滤 DeepSeek-R1 的思考过程 <think>...</think>
+  if (rawText.includes('</think>')) {
+    rawText = rawText.split('</think>').pop() || "{}";
+  }
+
+  // 移除可能存在的 Markdown 标签
+  const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
   try {
-    return JSON.parse(rawText);
-  } catch (e) {
-    const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanJson);
+  } catch (e) {
+    console.error("JSON 解析失败，原始文本:", cleanJson);
+    throw new Error("模型返回的数据格式不正确");
   }
 }
 
 export const fetchDailyRecommendations = async (): Promise<RecommendTopic[]> => {
   try {
     const data = await callDeepSeekApi({ isRecommendRequest: true });
-    // DeepSeek 模式下数据在 data.topics 中
     return Array.isArray(data.topics) ? data.topics : (Array.isArray(data) ? data : []);
   } catch (error) {
     console.error("API 调用失败，将使用兜底数据:", error);
-    throw error; // 抛出给 UI 层处理兜底
+    throw error;
   }
 };
 
