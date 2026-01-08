@@ -1,10 +1,7 @@
 
 import { AnalysisResult, RecommendTopic } from "../types";
 
-/**
- * 核心请求函数：调用您的 api/analyze.js 接口
- */
-async function callTencentApi(payload: any) {
+async function callDeepSeekApi(payload: any) {
   const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: {
@@ -13,50 +10,41 @@ async function callTencentApi(payload: any) {
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || '请求失败，请检查后端配置或 SecretKey');
-  }
-
   const data = await response.json();
   
-  // 混元返回的结构是 { text: "JSON字符" }
-  const rawText = data.text || "";
-  
+  if (data.isApiError) {
+    throw new Error(data.error);
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || '请求失败');
+  }
+
+  const rawText = data.text || "{}";
   try {
-    // 尝试直接解析
     return JSON.parse(rawText);
   } catch (e) {
-    // 如果解析失败，尝试清洗可能存在的 Markdown 标记
-    const cleanJson = rawText
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .trim();
-    try {
-      return JSON.parse(cleanJson);
-    } catch (innerError) {
-      console.error("JSON 解析错误，原始文本:", rawText);
-      throw new Error("模型返回数据格式不规范，请重试");
-    }
+    const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJson);
   }
 }
 
 export const fetchDailyRecommendations = async (): Promise<RecommendTopic[]> => {
   try {
-    const data = await callTencentApi({ isRecommendRequest: true });
-    return Array.isArray(data) ? data : [];
+    const data = await callDeepSeekApi({ isRecommendRequest: true });
+    // DeepSeek 模式下数据在 data.topics 中
+    return Array.isArray(data.topics) ? data.topics : (Array.isArray(data) ? data : []);
   } catch (error) {
-    console.error("加载推荐选题失败:", error);
-    return [];
+    console.error("API 调用失败，将使用兜底数据:", error);
+    throw error; // 抛出给 UI 层处理兜底
   }
 };
 
 export const analyzeTopic = async (topic: string): Promise<AnalysisResult> => {
   try {
-    const data = await callTencentApi({ topic, isRecommendRequest: false });
-    // 确保返回的数据符合 AnalysisResult 接口
+    const data = await callDeepSeekApi({ topic, isRecommendRequest: false });
     return data as AnalysisResult;
   } catch (error: any) {
-    throw new Error(error.message || "趋势挖掘失败，请重试");
+    throw new Error(error.message || "趋势挖掘失败");
   }
 };

@@ -8,6 +8,18 @@ import ResultCard from './components/ResultCard';
 const CACHE_KEY = 'trendburst_v3_reco';
 const CACHE_TIME_KEY = 'trendburst_v3_fetch_date';
 
+// 2026 年离线兜底选题 (当 API 余额不足时展示)
+const FALLBACK_RECOMMENDS: RecommendTopic[] = [
+  { title: "2026年个税汇算实操指南", category: "政策", heat: 98, icon: "Wallet" },
+  { title: "手机内存清理：彻底删除隐藏的大文件", category: "效率", heat: 96, icon: "Smartphone" },
+  { title: "二线城市低成本创业项目清单", category: "省钱", heat: 94, icon: "Briefcase" },
+  { title: "华为/小米手机关闭广告的最终方案", category: "效率", heat: 92, icon: "Zap" },
+  { title: "2026最新城乡居民医保补贴申领", category: "政策", heat: 91, icon: "HeartPulse" },
+  { title: "普通人如何复刻短视频爆款脚本", category: "娱乐", heat: 89, icon: "Gamepad2" },
+  { title: "半熟蛋火候精准控制秘籍", category: "生活", heat: 88, icon: "Zap" },
+  { title: "微信隐藏的4个超实用办公功能", category: "效率", heat: 87, icon: "Smartphone" }
+];
+
 function App() {
   const [topic, setTopic] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +44,12 @@ function App() {
             setRecommends(freshData);
             localStorage.setItem(CACHE_KEY, JSON.stringify(freshData));
             localStorage.setItem(CACHE_TIME_KEY, today);
+          } else {
+            setRecommends(FALLBACK_RECOMMENDS);
           }
         } catch (e) {
-          console.error("加载选题失败");
+          console.warn("API 无法加载（可能是余额不足），已加载兜底选题");
+          setRecommends(FALLBACK_RECOMMENDS);
         } finally {
           setIsRecommendsLoading(false);
         }
@@ -57,7 +72,7 @@ function App() {
       const result = await analyzeTopic(finalTopic);
       setData(result);
     } catch (err: any) {
-      setError(err.message || '分析过程中发生错误，请稍后再试。');
+      setError(err.message || '分析失败。请检查 DeepSeek API 余额或网络连接。');
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +91,7 @@ function App() {
             <span className="text-xl font-extrabold text-gray-900 tracking-tight">TrendBurst <span className="text-indigo-600 font-medium tracking-normal">热搜挖掘机</span></span>
           </div>
           <div className="flex items-center gap-4">
-             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase border border-indigo-100">DeepSeek R1/V3 Inside</span>
+             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-wider">DeepSeek Intelligence</span>
           </div>
         </div>
       </nav>
@@ -89,7 +104,7 @@ function App() {
             一键挖掘 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">爆款长尾热词</span>
           </h1>
           <p className="text-xl text-gray-500 mb-10 font-medium max-w-2xl mx-auto">
-            输入选题主题，DeepSeek AI 为您深度分析搜索趋势并生成高点击标题。
+            输入选题主题，DeepSeek AI 为您分析 2026 搜索趋势并生成爆款标题。
           </p>
 
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-3xl mx-auto">
@@ -101,7 +116,7 @@ function App() {
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="试试输入：清理内存、微信隐藏技巧、副业项目..."
+                  placeholder="试试输入：清理内存、个税申报、省钱副业..."
                   className="flex-1 block w-full border-0 bg-transparent py-5 pl-4 pr-4 text-gray-900 placeholder:text-gray-300 focus:ring-0 text-xl font-medium focus:outline-none"
                 />
                 <button
@@ -150,8 +165,8 @@ function App() {
                         {rec.heat}%
                       </div>
                     </div>
-                    <h3 className="text-lg font-black text-gray-800 group-hover:text-indigo-600 transition-colors mb-3 leading-tight">{rec.title}</h3>
-                    <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-black text-gray-800 group-hover:text-indigo-600 transition-colors mb-3 leading-tight line-clamp-2 h-12">{rec.title}</h3>
+                    <div className="flex items-center justify-between mt-2">
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">{rec.category}</span>
                     </div>
                   </div>
@@ -164,7 +179,11 @@ function App() {
         {/* 错误提示 */}
         {error && (
           <div className="max-w-2xl mx-auto bg-red-50 border border-red-100 text-red-600 px-8 py-6 rounded-3xl text-center mb-10">
-            <p className="font-black">挖掘失败：{error}</p>
+            <p className="font-black mb-2">挖掘失败</p>
+            <p className="text-sm opacity-80">{error}</p>
+            {error.includes('Balance') && (
+              <p className="mt-4 text-xs bg-white/50 py-2 rounded-lg">提示：您的 DeepSeek API 余额已耗尽，请前往官网充值。</p>
+            )}
           </div>
         )}
 
