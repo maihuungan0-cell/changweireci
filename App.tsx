@@ -65,7 +65,7 @@ function App() {
       setData(result);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setError(err.message || '分析失败，请重试。');
+      setError(err.message || '分析失败，请稍后重试。');
     } finally {
       setIsLoading(false);
     }
@@ -79,8 +79,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans pb-20">
-      
-      {/* 导航栏 */}
       <nav className="bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer" onClick={resetToHome}>
@@ -89,32 +87,13 @@ function App() {
             </div>
             <span className="text-xl font-black text-slate-900">TrendBurst <span className="text-brand-600 font-medium">挖掘机</span></span>
           </div>
-          
-          {data && (
-            <div className="hidden md:flex flex-1 max-w-sm mx-8">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="继续搜索..."
-                  className="w-full bg-slate-100 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-500/20 transition-all outline-none"
-                />
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-              </div>
-            </div>
-          )}
-
           <div className="text-[10px] font-bold text-brand-600 bg-brand-50 px-3 py-1.5 rounded-full border border-brand-100">
-            DeepSeek V3 Turbo
+            Gemini 3 Flash Powered
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-6">
-        
-        {/* 只有在没有结果时显示 Hero 和推荐 */}
         {!data && (
           <div className="animate-in fade-in duration-500">
             <div className="pt-20 text-center max-w-4xl mx-auto mb-24">
@@ -122,7 +101,7 @@ function App() {
                 全网实时 <span className="text-brand-600">热搜关键词挖掘</span>
               </h1>
               <p className="text-xl text-slate-500 mb-12 max-w-2xl mx-auto">
-                输入任意主题，深度分析其在全网的流量趋势、核心热搜词及爆款选题建议。
+                输入任意主题，我们将通过 <b>Google 搜索</b> 深度分析流量趋势与爆款选题。
               </p>
 
               <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-3xl mx-auto">
@@ -134,7 +113,7 @@ function App() {
                       type="text"
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
-                      placeholder="搜索主题：如“清理内存”、“个税申报”"
+                      placeholder="例如：清理内存、职场副业、理财避坑"
                       className="flex-1 block w-full border-0 bg-transparent py-5 pl-4 pr-4 text-slate-900 text-xl font-medium focus:ring-0 outline-none"
                     />
                     <button
@@ -152,7 +131,7 @@ function App() {
             <section className="max-w-6xl mx-auto pb-20">
               <h2 className="text-2xl font-black mb-8 flex items-center">
                 <Flame className="w-6 h-6 text-orange-500 mr-2" />
-                今日热搜趋势
+                今日趋势热点
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {isRecommendsLoading ? (
@@ -180,36 +159,32 @@ function App() {
           </div>
         )}
 
-        {/* 结果页视图 */}
         {data && !isLoading && (
           <div className="pt-10 animate-in slide-in-from-right-10 duration-500">
-            <button 
-              onClick={resetToHome}
-              className="mb-8 flex items-center gap-2 text-slate-500 hover:text-brand-600 font-bold transition-colors"
-            >
+            <button onClick={resetToHome} className="mb-8 flex items-center gap-2 text-slate-500 hover:text-brand-600 font-bold transition-colors">
               <RefreshCw className="w-4 h-4" /> 返回重新搜索
             </button>
             <ResultCard result={data} />
           </div>
         )}
 
-        {/* 加载遮罩 */}
         {isLoading && (
           <div className="fixed inset-0 bg-white/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center">
-            <Loader2 className="w-12 h-12 text-brand-600 animate-spin mb-6" />
-            <p className="text-xl font-black text-slate-900">正在挖掘全网热搜词...</p>
-            <p className="text-slate-500 mt-2">由于需要解析大量趋势数据，请耐心等待 10-20 秒</p>
+            <div className="p-10 bg-white rounded-3xl shadow-2xl border border-slate-100 flex flex-col items-center">
+              <Loader2 className="w-12 h-12 text-brand-600 animate-spin mb-6" />
+              <p className="text-xl font-black text-slate-900">正在调用 Google 搜索深度挖掘...</p>
+              <p className="text-slate-500 mt-2">实时分析全网趋势中，请稍候</p>
+            </div>
           </div>
         )}
 
         {error && (
           <div className="max-w-2xl mx-auto mt-12 p-8 bg-rose-50 border border-rose-100 text-rose-600 rounded-3xl text-center shadow-sm">
-            <p className="font-bold mb-2">挖掘失败</p>
+            <p className="font-bold mb-2">挖掘中断</p>
             <p className="text-sm opacity-80">{error}</p>
-            <button onClick={resetToHome} className="mt-4 text-xs font-black underline tracking-widest">尝试重置</button>
+            <button onClick={resetToHome} className="mt-4 text-xs font-black underline tracking-widest">重置并尝试</button>
           </div>
         )}
-
       </main>
     </div>
   );
