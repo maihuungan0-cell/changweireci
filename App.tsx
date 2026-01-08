@@ -8,16 +8,10 @@ import ResultCard from './components/ResultCard';
 const CACHE_KEY = 'trendburst_v4_reco';
 const CACHE_TIME_KEY = 'trendburst_v4_fetch_date';
 
-// 2025 年真实热点兜底选题
 const FALLBACK_RECOMMENDS: RecommendTopic[] = [
   { title: "2025年个税汇算避坑指南", category: "政策", heat: 98, icon: "Wallet" },
-  { title: "安卓手机如何关闭顽固广告", category: "数码", heat: 96, icon: "Smartphone" },
-  { title: "普通人如何利用 AI 增加收入", category: "搞钱", heat: 94, icon: "Briefcase" },
-  { title: "居民医保补贴申领最新流程", category: "民生", heat: 92, icon: "Zap" },
-  { title: "微信 8.0 隐藏的高效技巧", category: "数码", heat: 91, icon: "Smartphone" },
-  { title: "职场心理：如何优雅地拒绝同事", category: "职场", heat: 89, icon: "Briefcase" },
-  { title: "居家收纳：阳台空间利用法", category: "生活", heat: 88, icon: "Brain" },
-  { title: "春季养肝食疗方：老中医建议", category: "健康", heat: 85, icon: "HeartPulse" }
+  { title: "手机空间不足？教你深度清理微信", category: "数码", heat: 96, icon: "Smartphone" },
+  { title: "普通人如何利用 AI 增加收入", category: "搞钱", heat: 94, icon: "Briefcase" }
 ];
 
 function App() {
@@ -48,7 +42,6 @@ function App() {
             setRecommends(FALLBACK_RECOMMENDS);
           }
         } catch (e) {
-          console.warn("API 无法加载，已启用真实预设选题");
           setRecommends(FALLBACK_RECOMMENDS);
         } finally {
           setIsRecommendsLoading(false);
@@ -72,7 +65,7 @@ function App() {
       const result = await analyzeTopic(finalTopic);
       setData(result);
     } catch (err: any) {
-      setError(err.message || '挖掘失败。请检查 API 余额或网络。');
+      setError(err.message || '联网挖掘超时，请重试或更换关键词。');
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +83,7 @@ function App() {
             <span className="text-xl font-extrabold text-gray-900 tracking-tight">TrendBurst <span className="text-indigo-600 font-medium tracking-normal">热搜挖掘机</span></span>
           </div>
           <div className="flex items-center gap-4">
-             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-wider">DeepSeek-R1 + Internet Search</span>
+             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-wider">DeepSeek-V3 Online</span>
           </div>
         </div>
       </nav>
@@ -99,10 +92,10 @@ function App() {
         
         <div className={`text-center max-w-4xl mx-auto transition-all duration-700 ease-out ${data ? 'mb-12 scale-90' : 'mb-20'}`}>
           <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-6 leading-tight">
-            全网实时 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">捕捉爆款流量</span>
+            全网实时 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">热搜关键词挖掘</span>
           </h1>
           <p className="text-xl text-gray-500 mb-10 font-medium max-w-2xl mx-auto">
-            集成 R1 推理模型与联网搜索能力，为您分析当前真实存在的流量热点。
+            输入任意主题，我们将通过 <b>DeepSeek 联网搜索</b> 为您提取当前最新、最热的爆款关键词。
           </p>
 
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-3xl mx-auto">
@@ -123,9 +116,12 @@ function App() {
                   className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-8 py-4 font-bold transition-all transform active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-xl shadow-indigo-200"
                 >
                   {isLoading ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>联网搜索中...</span>
+                    </div>
                   ) : (
-                    <>联网挖掘 <Sparkles className="w-5 h-5" /></>
+                    <>挖掘热搜 <Sparkles className="w-5 h-5" /></>
                   )}
                 </button>
               </div>
@@ -138,14 +134,14 @@ function App() {
             <div className="flex items-center justify-between mb-10 px-4">
               <h2 className="text-2xl font-black text-gray-900 flex items-center">
                 <Flame className="w-6 h-6 text-orange-500 mr-3" />
-                今日高热度选题推荐 (真实热搜)
+                今日全网真实热搜选题 (联网版)
               </h2>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {isRecommendsLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-white p-6 rounded-3xl border border-gray-50 animate-pulse h-40"></div>
+                  <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 animate-pulse h-40"></div>
                 ))
               ) : (
                 recommends.map((rec, idx) => (
@@ -175,7 +171,7 @@ function App() {
 
         {error && (
           <div className="max-w-2xl mx-auto bg-red-50 border border-red-100 text-red-600 px-8 py-6 rounded-3xl text-center mb-10">
-            <p className="font-black mb-2">挖掘失败</p>
+            <p className="font-black mb-2">联网搜索遇到问题</p>
             <p className="text-sm opacity-80">{error}</p>
           </div>
         )}
