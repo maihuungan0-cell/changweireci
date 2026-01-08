@@ -3,14 +3,32 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, Platform, RecommendTopic } from "../types";
 
 // 初始化 Gemini AI
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY 环境变量未配置，请检查环境设置。");
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
+/**
+ * 清洗模型返回的字符串，确保只有 JSON 部分
+ */
+const cleanJsonResponse = (text: string) => {
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    return jsonMatch ? jsonMatch[0] : text;
+  } catch (e) {
+    return text;
+  }
+};
 
 export const fetchDailyRecommendations = async (): Promise<RecommendTopic[]> => {
-  const ai = getAI();
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: "为今天的互联网创作者推荐16个最火的爆款选题。结合当下的季节、节日或行业热点。输出格式为 JSON 数组。",
+      contents: "请作为顶级自媒体运营专家，为创作者生成 16 个当前最火的爆款选题建议。涵盖科技、职场、生活、理财等热门领域。输出格式为纯 JSON 数组。",
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -21,31 +39,33 @@ export const fetchDailyRecommendations = async (): Promise<RecommendTopic[]> => 
               title: { type: Type.STRING },
               category: { type: Type.STRING },
               heat: { type: Type.NUMBER },
-              icon: { type: Type.STRING, description: "Icon: Wallet, Briefcase, Zap, Heart, Camera, Coffee, Brain, Smartphone, TrendingUp" }
+              icon: { type: Type.STRING, description: "可选图标名: Wallet, Briefcase, Zap, Heart, Camera, Coffee, Brain, Smartphone, TrendingUp" }
             },
             required: ["title", "category", "heat", "icon"]
           }
         }
       }
     });
-    return JSON.parse(response.text || "[]");
+    
+    const text = cleanJsonResponse(response.text || "[]");
+    return JSON.parse(text);
   } catch (error) {
     console.error("Gemini Recs Error:", error);
-    throw new Error("无法获取今日推荐，请检查网络或 API 配置。");
+    return []; // 失败时返回空数组，不阻塞页面加载
   }
 };
 
 export const analyzeTopic = async (topic: string): Promise<AnalysisResult> => {
-  const ai = getAI();
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `你是一个顶级流量分析专家。请深度分析主题 "${topic}" 在当下的全网热搜趋势。
-      要求：
-      1. 使用 Google 搜索获取该主题在微信、百度、知乎、小红书等平台的实时动态。
-      2. 提取 10 个以上的高价值搜索关键词，并给出其热度分数和分析逻辑。
-      3. 生成 6 个具有极高点击率的爆款标题。
-      4. 总结受众当前的搜索心理。`,
+      contents: `你是一位全网流量趋势分析专家。请深度挖掘关于 "${topic}" 的实时热搜数据。
+      任务要求：
+      1. 使用 Google Search 检索该主题在各社交媒体（微信、百度、小红书、知乎等）的真实动态。
+      2. 提取至少 10 个高关联的热搜词，标注其热度（0-100）、所属平台及趋势方向（up/down/stable）。
+      3. 生成 6 个爆款标题，要求具有极高点击率且不低俗。
+      4. 总结受众当前的真实搜索意图和心理。`,
       config: {
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
@@ -62,7 +82,7 @@ export const analyzeTopic = async (topic: string): Promise<AnalysisResult> => {
                   keyword: { type: Type.STRING },
                   heatScore: { type: Type.NUMBER },
                   platform: { type: Type.STRING },
-                  trend: { type: Type.STRING, description: "up, down, stable" },
+                  trend: { type: Type.STRING },
                   reasoning: { type: Type.STRING }
                 },
                 required: ["keyword", "heatScore", "platform", "trend", "reasoning"]
@@ -78,7 +98,8 @@ export const analyzeTopic = async (topic: string): Promise<AnalysisResult> => {
       }
     });
 
-    const data = JSON.parse(response.text || "{}");
+    const text = cleanJsonResponse(response.text || "{}");
+    const data = JSON.parse(text);
     
     // 提取搜索来源链接
     const sources: any[] = [];
@@ -94,9 +115,16 @@ export const analyzeTopic = async (topic: string): Promise<AnalysisResult> => {
       });
     }
 
-    return { ...data, sources };
+    return {
+      topic: data.topic || topic,
+      summary: data.summary || "分析已完成。",
+      keywords: Array.isArray(data.keywords) ? data.keywords : [],
+      generatedTitles: Array.isArray(data.generatedTitles) ? data.generatedTitles : [],
+      sources: sources.length > 0 ? sources : undefined
+    };
   } catch (error: any) {
     console.error("Gemini Analysis Error:", error);
-    throw new Error(error.message || "挖掘失败：连接超时或服务中断，请稍后重试。");
+    // 将错误抛出以便前端 catch 到并展示错误提示卡片
+    throw new Error(error.message || "请求 AI 接口失败，请检查网络连接。");
   }
 };

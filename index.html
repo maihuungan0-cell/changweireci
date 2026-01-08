@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TrendBurst - 爆款挖掘机</title>
+    <title>TrendBurst - 全网热搜爆款挖掘机</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -19,7 +19,25 @@
                 700: '#1d4ed8',
                 900: '#1e3a8a',
               }
-            }
+            },
+            fontFamily: {
+              sans: [
+                'Inter', 
+                'system-ui', 
+                '-apple-system', 
+                'BlinkMacSystemFont', 
+                '"Segoe UI"', 
+                'Roboto', 
+                '"Helvetica Neue"', 
+                'Arial', 
+                '"Noto Sans"', 
+                'sans-serif', 
+                '"Apple Color Emoji"', 
+                '"Segoe UI Emoji"', 
+                '"Segoe UI Symbol"', 
+                '"Noto Color Emoji"'
+              ],
+            },
           }
         }
       }
@@ -27,36 +45,50 @@
     <style>
       body {
         background-color: #f8fafc;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
       }
+      /* 优化滚动条 */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: #f1f1f1;
+        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
+        background: #e2e8f0;
+        border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        background: #cbd5e1;
+      }
+      /* 渐变文本动画 */
+      .animate-gradient-text {
+        background-size: 200% auto;
+        animation: gradient 3s linear infinite;
+      }
+      @keyframes gradient {
+        0% { background-position: 0% center; }
+        50% { background-position: 100% center; }
+        100% { background-position: 0% center; }
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+        "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
+        "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
+      }
+    }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
