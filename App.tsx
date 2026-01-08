@@ -6,7 +6,7 @@ import { AnalysisResult, RecommendTopic } from './types';
 import ResultCard from './components/ResultCard';
 
 const CACHE_KEY = 'trendburst_v3_reco';
-const CACHE_TIME_KEY = 'trendburst_v3_fetch';
+const CACHE_TIME_KEY = 'trendburst_v3_fetch_date';
 
 function App() {
   const [topic, setTopic] = useState('');
@@ -19,11 +19,10 @@ function App() {
   useEffect(() => {
     const loadRecommendations = async () => {
       const cachedData = localStorage.getItem(CACHE_KEY);
-      const lastFetch = localStorage.getItem(CACHE_TIME_KEY);
-      const now = Date.now();
-      const ONE_DAY = 24 * 60 * 60 * 1000;
+      const lastFetchDate = localStorage.getItem(CACHE_TIME_KEY);
+      const today = new Date().toLocaleDateString();
 
-      if (cachedData && lastFetch && (now - parseInt(lastFetch) < ONE_DAY)) {
+      if (cachedData && lastFetchDate === today) {
         setRecommends(JSON.parse(cachedData));
       } else {
         setIsRecommendsLoading(true);
@@ -32,7 +31,7 @@ function App() {
           if (freshData && freshData.length > 0) {
             setRecommends(freshData);
             localStorage.setItem(CACHE_KEY, JSON.stringify(freshData));
-            localStorage.setItem(CACHE_TIME_KEY, now.toString());
+            localStorage.setItem(CACHE_TIME_KEY, today);
           }
         } catch (e) {
           console.error("加载选题失败");
@@ -71,13 +70,13 @@ function App() {
       <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-brand-600 p-2 rounded-xl shadow-lg shadow-brand-200">
+            <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-extrabold text-gray-900 tracking-tight">TrendBurst <span className="text-brand-600 font-medium tracking-normal">热搜挖掘机</span></span>
+            <span className="text-xl font-extrabold text-gray-900 tracking-tight">TrendBurst <span className="text-indigo-600 font-medium tracking-normal">热搜挖掘机</span></span>
           </div>
           <div className="flex items-center gap-4">
-             <span className="text-[10px] font-black text-brand-600 bg-brand-50 px-3 py-1 rounded-full uppercase border border-brand-100">Hunyuan Core V2</span>
+             <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase border border-indigo-100">DeepSeek R1/V3 Inside</span>
           </div>
         </div>
       </nav>
@@ -87,15 +86,15 @@ function App() {
         {/* 搜索区 */}
         <div className={`text-center max-w-4xl mx-auto transition-all duration-700 ease-out ${data ? 'mb-12 scale-90' : 'mb-20'}`}>
           <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-6 leading-tight">
-            一键挖掘 <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-500">爆款长尾热词</span>
+            一键挖掘 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">爆款长尾热词</span>
           </h1>
           <p className="text-xl text-gray-500 mb-10 font-medium max-w-2xl mx-auto">
-            输入选题主题，腾讯混元 AI 为您深度分析搜索趋势并生成高点击标题。
+            输入选题主题，DeepSeek AI 为您深度分析搜索趋势并生成高点击标题。
           </p>
 
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="relative max-w-3xl mx-auto">
             <div className="relative group">
-              <div className="absolute -inset-2 bg-gradient-to-r from-brand-400 to-indigo-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+              <div className="absolute -inset-2 bg-gradient-to-r from-indigo-400 to-blue-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
               <div className="relative bg-white rounded-2xl shadow-2xl flex items-center p-2 border border-gray-50">
                 <Search className="w-6 h-6 text-gray-300 ml-5" />
                 <input
@@ -108,7 +107,7 @@ function App() {
                 <button
                   type="submit"
                   disabled={isLoading || !topic.trim()}
-                  className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl px-8 py-4 font-bold transition-all transform active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-xl shadow-brand-200"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-8 py-4 font-bold transition-all transform active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-xl shadow-indigo-200"
                 >
                   {isLoading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
@@ -141,17 +140,17 @@ function App() {
                   <div 
                     key={idx}
                     onClick={() => handleSearch(rec.title)}
-                    className="group cursor-pointer bg-white p-6 rounded-3xl border border-gray-100 hover:border-brand-300 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
+                    className="group cursor-pointer bg-white p-6 rounded-3xl border border-gray-100 hover:border-indigo-300 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
                   >
                     <div className="flex justify-between items-start mb-5">
-                      <div className="p-3 bg-brand-50 text-brand-600 rounded-2xl group-hover:bg-brand-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-12">
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-12">
                         <CategoryIcon name={rec.icon} className="w-6 h-6" />
                       </div>
                       <div className="flex items-center text-[10px] font-black text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100">
                         {rec.heat}%
                       </div>
                     </div>
-                    <h3 className="text-lg font-black text-gray-800 group-hover:text-brand-600 transition-colors mb-3 leading-tight">{rec.title}</h3>
+                    <h3 className="text-lg font-black text-gray-800 group-hover:text-indigo-600 transition-colors mb-3 leading-tight">{rec.title}</h3>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">{rec.category}</span>
                     </div>
