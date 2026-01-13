@@ -5,30 +5,41 @@ import { analyzeTopic, fetchDailyRecommendations } from './services/apiService';
 import { AnalysisResult, RecommendTopic } from './types';
 import ResultCard from './components/ResultCard';
 
-const CACHE_KEY = 'trend_ds_v3_reco_v2';
+// 动态生成日期 Key，确保每天的缓存都是独立的
+const getCacheKey = () => {
+  const today = new Date().toISOString().split('T')[0]; // 格式如: 2025-05-20
+  return `trend_ds_reasoner_v4_${today}`;
+};
 
 function App() {
   const [topic, setTopic] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<AnalysisResult | null>(null);
   const [recommends, setRecommends] = useState<RecommendTopic[]>([]);
+  const [isRefreshingRecs, setIsRefreshingRecs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
 
-  useEffect(() => {
-    const initData = async () => {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        setRecommends(JSON.parse(cached));
-      } else {
-        const fresh = await fetchDailyRecommendations();
-        if (fresh.length > 0) {
-          setRecommends(fresh);
-          localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
-        }
+  // 初始化加载趋势
+  const loadTrends = async (force = false) => {
+    const cacheKey = getCacheKey();
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached && !force) {
+      setRecommends(JSON.parse(cached));
+    } else {
+      setIsRefreshingRecs(true);
+      const fresh = await fetchDailyRecommendations();
+      if (fresh.length > 0) {
+        setRecommends(fresh);
+        localStorage.setItem(cacheKey, JSON.stringify(fresh));
       }
-    };
-    initData();
+      setIsRefreshingRecs(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTrends();
   }, []);
 
   // 加载状态提示循环
@@ -37,7 +48,7 @@ function App() {
     if (isLoading) {
       timer = window.setInterval(() => {
         setLoadingStep(prev => (prev + 1) % 3);
-      }, 3000);
+      }, 5000);
     } else {
       setLoadingStep(0);
     }
@@ -45,9 +56,9 @@ function App() {
   }, [isLoading]);
 
   const loadingTexts = [
-    "DeepSeek 正在构建流量模型...",
-    "正在精选 6 个核心价值关键词...",
-    "正在打磨 4 个爆款标题建议..."
+    "DeepSeek Reasoner 正在深度思考中...",
+    "正在通过逻辑链条推理核心流量趋势...",
+    "正在基于大数据模型构建爆款内容模型..."
   ];
 
   const onDigging = async (queryTopic?: string) => {
@@ -87,7 +98,7 @@ function App() {
             <span className="text-xl font-black text-slate-900 tracking-tight">TrendBurst <span className="text-brand-600">挖掘机</span></span>
           </div>
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-            Powered by DeepSeek V3
+            Powered by DeepSeek Reasoner
           </div>
         </div>
       </nav>
@@ -97,10 +108,10 @@ function App() {
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="pt-24 pb-20 text-center max-w-4xl mx-auto">
               <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight mb-8">
-                全网爆款 <span className="text-brand-600">深度趋势分析</span>
+                全网爆款 <span className="text-brand-600">深度推理分析</span>
               </h1>
               <p className="text-xl text-slate-500 mb-12 font-medium leading-relaxed">
-                输入关键词，利用 <b>DeepSeek-V3</b> 逻辑模型深度挖掘搜索价值与爆款关键词。
+                输入关键词，利用 <b>DeepSeek-Reasoner</b> 思考模型深度挖掘流量价值与爆款关键词。
               </p>
 
               <form 
@@ -130,13 +141,24 @@ function App() {
               </form>
             </div>
 
-            {recommends.length > 0 && (
-              <section className="max-w-6xl mx-auto">
-                <h2 className="text-2xl font-black mb-8 flex items-center text-slate-800">
+            <section className="max-w-6xl mx-auto">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-black flex items-center text-slate-800">
                   <Flame className="w-6 h-6 text-orange-500 mr-2" />
                   今日趋势参考
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <button 
+                  onClick={() => loadTrends(true)}
+                  disabled={isRefreshingRecs}
+                  className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-brand-600 transition-colors disabled:opacity-30"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingRecs ? 'animate-spin' : ''}`} />
+                  {isRefreshingRecs ? '更新中...' : '换一批'}
+                </button>
+              </div>
+
+              {recommends.length > 0 ? (
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 transition-opacity duration-300 ${isRefreshingRecs ? 'opacity-50' : 'opacity-100'}`}>
                   {recommends.map((rec, idx) => (
                     <div 
                       key={idx}
@@ -160,8 +182,13 @@ function App() {
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
+              ) : (
+                <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-200">
+                  <Loader2 className="w-8 h-8 text-brand-200 animate-spin mx-auto mb-4" />
+                  <p className="text-slate-400 font-bold">正在捕捉今日流量密码...</p>
+                </div>
+              )}
+            </section>
           </div>
         )}
 
@@ -183,7 +210,7 @@ function App() {
                <div className="absolute inset-0 bg-brand-500/20 blur-3xl rounded-full animate-pulse"></div>
                <Loader2 className="w-16 h-16 text-brand-600 animate-spin relative" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900 transition-all duration-500">
+            <h3 className="text-2xl font-black text-slate-900 transition-all duration-500 text-center px-6">
               {loadingTexts[loadingStep]}
             </h3>
             <div className="mt-6 flex gap-2">
@@ -191,7 +218,7 @@ function App() {
                 <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === loadingStep ? 'bg-brand-600 w-8' : 'bg-brand-200'}`}></div>
               ))}
             </div>
-            <p className="text-slate-400 mt-8 font-medium text-sm">V3 引擎极速分析中，预计 5-8 秒...</p>
+            <p className="text-slate-400 mt-8 font-medium text-sm">Reasoner 正在进行深度推理，响应时间较长，请耐心等待...</p>
           </div>
         )}
 

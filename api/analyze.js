@@ -16,19 +16,17 @@ export default async function handler(req, res) {
 
   let systemPrompt = "";
   if (isRecommendRequest) {
-    // 推荐请求：减少数量至 12 个以提速
     systemPrompt = `你是一位顶级流量专家。今天是 ${dateStr}。生成 12 个当前最火的爆款选题。
-    要求：输出纯 JSON 格式，不要包含任何解释。
+    要求：输出纯 JSON 格式，不要包含任何解释或 Markdown 代码块标识。
     格式：{ "topics": [ {"title": "标题", "category": "分类", "heat": 85-99, "icon": "图标名"} ] }
     图标名限选: Wallet, Briefcase, Zap, Heart, Camera, Coffee, Brain, Smartphone, Gamepad2, TrendingUp`;
   } else {
-    // 深度挖掘：精简数量，限制字数以极速响应
     systemPrompt = `你是一位资深 SEO 专家。针对主题 "${topic}"，结合 ${dateStr} 背景进行极速分析。
     要求：
-    1. 挖掘 6 个核心关键词（不要 10 个，只要最精选的 6 个）。
+    1. 挖掘 6 个核心关键词（最精选的 6 个）。
     2. reasoning 分析必须控制在 30 字以内，简明扼要。
     3. 生成 4 个爆款标题。
-    4. 输出纯 JSON，严禁任何前导说明。
+    4. 输出纯 JSON，严禁任何前导说明或 Markdown 格式。
     格式：
     {
       "topic": "${topic}",
@@ -40,7 +38,8 @@ export default async function handler(req, res) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 55000);
+    // 思考模式耗时较长，将超时时间延长至 80 秒
+    const timeoutId = setTimeout(() => controller.abort(), 80000);
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -49,13 +48,13 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: "deepseek-reasoner", // 切换到深度思考模式
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: isRecommendRequest ? "立即生成今日热点 JSON" : `极速分析 "${topic}"` }
+          { role: "user", content: isRecommendRequest ? "立即生成今日热点 JSON" : `请利用你的深度推理能力，分析 "${topic}" 的爆款潜力` }
         ],
-        temperature: 0.6, // 降低随机性，提高输出速度和稳定性
-        max_tokens: 1500 // 限制最大 Token 数量
+        // deepseek-reasoner 不支持自定义 temperature，由模型自动控制推理逻辑
+        stream: false
       }),
       signal: controller.signal
     });
@@ -71,6 +70,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: content });
   } catch (error) {
     const isTimeout = error.name === 'AbortError';
-    return res.status(500).json({ error: isTimeout ? '分析请求超时，模型响应过慢' : `服务中断: ${error.message}` });
+    return res.status(500).json({ error: isTimeout ? '深度思考模式响应较慢（超时），请刷新重试' : `服务中断: ${error.message}` });
   }
 }
